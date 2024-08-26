@@ -1,0 +1,233 @@
+# frozen_string_literal: true
+
+#-- copyright
+# OpenProject is an open source project management software.
+# Copyright (C) the OpenProject GmbH
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License version 3.
+#
+# OpenProject is a fork of ChiliProject, which is a fork of Redmine. The copyright follows:
+# Copyright (C) 2006-2013 Jean-Philippe Lang
+# Copyright (C) 2010-2013 the ChiliProject Team
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+#
+# See COPYRIGHT and LICENSE files for more details.
+#++
+
+require "spec_helper"
+require_module_spec_helper
+
+module Storages
+  module Adapters
+    RSpec.describe Authentication, :webmock do
+      include Dry::Monads[:result]
+
+      let(:user) { create(:user) }
+      let(:http_options) { {} }
+
+      subject(:authentication) { described_class }
+
+      shared_examples_for "successful response" do |refreshed: false|
+        it "must #{refreshed ? 'refresh token and ' : ''}return success" do
+          result = authentication[strategy_data].call(storage:, http_options:) { |http| make_request(http) }
+          expect(result).to be_success
+          expect(result.value!).to eq("EXPECTED_RESULT")
+        end
+      end
+
+      describe "Basic Authentication Strategy" do
+        let(:storage) do
+          create(:nextcloud_storage_with_local_connection, :as_not_automatically_managed, oauth_client_token_user: user)
+        end
+
+        let(:request_url) { "#{storage.uri}ocs/v1.php/cloud/user" }
+        let(:http_options) { { headers: { "OCS-APIRequest" => "true", "Accept" => "application/json" } } }
+
+        let(:strategy_data) { Data::StrategyData.new(key: :basic_auth) }
+
+        context "with valid credentials", vcr: "auth/nextcloud/basic_auth" do
+          before do
+            storage.username = "admin"
+            storage.password = "admin"
+          end
+
+          it_behaves_like "successful response"
+        end
+
+        context "with empty username and password" do
+          it "must return error" do
+            result = authentication[strategy_data].call(storage:, http_options:) { |http| make_request(http) }
+            expect(result).to be_failure
+
+            error = result.failure
+            expect(error.code).to eq(:missing_credentials)
+            expect(error.source).to be(AuthenticationStrategies::BasicAuth)
+          end
+        end
+
+        context "with invalid username and/or password", vcr: "auth/nextcloud/basic_auth_password_invalid" do
+          before do
+            storage.username = "admin"
+            storage.password = "YouShallNot(Multi)Pass"
+          end
+
+          it "must return unauthorized" do
+            result = authentication[strategy_data].call(storage:, http_options:) { |http| make_request(http) }
+            expect(result).to be_failure
+
+            error = result.failure
+            expect(error.code).to eq(:unauthorized)
+            expect(error.source).to be("EXECUTING_QUERY")
+          end
+        end
+      end
+
+      describe "OAuth Client Credential Strategy" do
+        let(:storage) { create(:sharepoint_dev_drive_storage, oauth_client_token_user: user) }
+
+        let(:strategy_data) { Data::StrategyData.new(key: :oauth_client_credentials, use_cache: false) }
+        let(:request_url) { "#{storage.uri}v1.0/drives" }
+
+        context "with valid oauth credentials", vcr: "auth/one_drive/client_credentials" do
+          it_behaves_like "successful response"
+        end
+
+        context "with invalid client secret", vcr: "auth/one_drive/client_credentials_invalid_client_secret" do
+          it "must return unauthorized" do
+            result = authentication[strategy_data].call(storage:) { |http| make_request(http) }
+            expect(result).to be_failure
+
+            error = result.failure
+            expect(error.code).to eq(:unauthorized)
+            expect(error.source).to be(AuthenticationStrategies::OAuthClientCredentials)
+          end
+        end
+
+        context "with invalid client id", vcr: "auth/one_drive/client_credentials_invalid_client_id" do
+          it "must return unauthorized" do
+            result = authentication[strategy_data].call(storage:) { |http| make_request(http) }
+            expect(result).to be_failure
+
+            error = result.failure
+            expect(error.code).to eq(:unauthorized)
+            expect(error.source).to be(AuthenticationStrategies::OAuthClientCredentials)
+          end
+        end
+      end
+
+      describe "OAuth User Token Strategy" do
+        let(:storage) do
+          create(:nextcloud_storage_with_local_connection, :as_not_automatically_managed, oauth_client_token_user: user)
+        end
+
+        let(:request_url) { "#{storage.uri}ocs/v1.php/cloud/user" }
+        let(:http_options) { { headers: { "OCS-APIRequest" => "true", "Accept" => "application/json" } } }
+
+        let(:strategy_data) { Data::StrategyData.new(user:, key: :oauth_user_token) }
+
+        context "with incomplete storage configuration (missing oauth client)" do
+          let(:storage) { create(:nextcloud_storage) }
+
+          it "must return error" do
+            result = authentication[strategy_data].call(storage:, http_options:) { |http| make_request(http) }
+            expect(result).to be_failure
+
+            error = result.failure
+            expect(error.code).to eq(:missing_oauth_client)
+            expect(error.source).to be(AuthenticationStrategies::OAuthUserToken)
+          end
+        end
+
+        context "with not existent oauth token" do
+          let(:user_without_token) { create(:user) }
+          let(:strategy_data) { Data::StrategyData.new(user: user_without_token, key: :oauth_user_token) }
+
+          it "must return unauthorized" do
+            result = authentication[strategy_data].call(storage:, http_options:) { |http| make_request(http) }
+            expect(result).to be_failure
+
+            error = result.failure
+            expect(error.code).to eq(:unauthorized)
+            expect(error.source).to be(AuthenticationStrategies::OAuthUserToken)
+          end
+        end
+
+        context "with invalid oauth refresh token", vcr: "auth/nextcloud/user_token_refresh_token_invalid" do
+          before { storage }
+
+          it "must return unauthorized" do
+            result = authentication[strategy_data].call(storage:, http_options:) { |http| make_request(http) }
+            expect(result).to be_failure
+
+            error = result.failure
+            expect(error.code).to eq(:unauthorized)
+            expect(error.source).to be(AuthenticationStrategies::OAuthUserToken)
+          end
+
+          it "logs, retries once, raises exception if race condition happens" do
+            token = OAuthClientToken.last
+            strategy = authentication[strategy_data]
+
+            allow(Rails.logger).to receive(:error)
+            allow(strategy).to receive(:current_token).and_return(Success(token))
+            allow(token).to receive(:destroy).and_raise(ActiveRecord::StaleObjectError).twice
+
+            expect do
+              strategy.call(storage:, http_options:) { |http| make_request(http) }
+            end.to raise_error(ActiveRecord::StaleObjectError)
+
+            expect(Rails.logger).to have_received(:error).with(/User ##{user.id} #{user.name}/).once
+          end
+        end
+
+        context "with invalid oauth access token", vcr: "auth/nextcloud/user_token_access_token_invalid" do
+          it_behaves_like "successful response", refreshed: true
+        end
+
+        context "with valid access token", vcr: "auth/one_drive/user_token" do
+          let(:request_url) { "#{storage.uri}v1.0/me" }
+          let(:storage) { create(:sharepoint_dev_drive_storage, oauth_client_token_user: user) }
+
+          it_behaves_like "successful response"
+        end
+      end
+
+      private
+
+      def make_request(http) = handle_response(http.get(request_url))
+
+      def handle_response(response)
+        case response
+        in { status: 200..299 }
+          Success("EXPECTED_RESULT")
+        in { status: 401 }
+          error(:unauthorized)
+        in { status: 403 }
+          error(:forbidden)
+        in { status: 404 }
+          error(:not_found)
+        else
+          error(:error)
+        end
+      end
+
+      def error(code)
+        Failure(Data::Result::Error.new(source: "EXECUTING_QUERY", code:))
+      end
+    end
+  end
+end
