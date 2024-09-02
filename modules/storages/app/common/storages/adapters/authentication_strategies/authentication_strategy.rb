@@ -32,6 +32,7 @@ module Storages
   module Adapters
     module AuthenticationStrategies
       class AuthenticationStrategy
+        include TaggedLogging
         include Dry::Monads[:result]
 
         def call(**)

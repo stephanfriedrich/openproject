@@ -62,6 +62,8 @@ end
 Dir[File.join(File.dirname(__FILE__), "support/**/*.rb")].each { |f| require f }
 
 RSpec.configure do |config|
+  config.include Dry::Monads[:result]
+
   config.prepend_before { Storages::Peripherals::Registry.enable_stubs! }
   config.append_after { Storages::Peripherals::Registry.unstub }
 

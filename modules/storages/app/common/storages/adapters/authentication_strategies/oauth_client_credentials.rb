@@ -32,29 +32,28 @@ module Storages
   module Adapters
     module AuthenticationStrategies
       class OAuthClientCredentials < AuthenticationStrategy
+        TOKEN_CACHE_KEY = "storage.%s.httpx_access_token"
+
         def initialize(use_cache)
           @use_cache = use_cache
         end
 
         def call(storage:, http_options: {})
-          config = storage.oauth_configuration.to_httpx_oauth_config
-          return build_failure(storage) unless config.valid?
+          config = validate_configuration(storage).value_or { return Failure(_1) }
 
-          token_cache_key = cache_key(storage)
+          token_cache_key = TOKEN_CACHE_KEY % storage.id
           access_token = @use_cache ? Rails.cache.read(token_cache_key) : nil
 
-          # In ruby 3.4 this can become `return it`
-          http = build_http_session(access_token, config, http_options)
-                   .alt_map { return Failure(_1) }
+          http = build_http_session(access_token, config, http_options).value_or { return Failure(_1) }
 
-          operation_result = yield http.value!
+          operation_result = yield http
 
           return operation_result unless @use_cache
 
           case operation_result
-          in success: true
-            write_cache(token_cache_key, http) if access_token.blank?
-          in failure: true, result: :forbidden
+          in Success if @use_cache && access_token.blank?
+            write_cache(token_cache_key, http)
+          in Failure(code: :forbidden)
             clear_cache(token_cache_key)
           else
             return operation_result
@@ -64,6 +63,13 @@ module Storages
         end
 
         private
+
+        def validate_configuration(storage)
+          config = storage.oauth_configuration.to_httpx_oauth_config
+          return Success(config) if config.valid?
+
+          Failure(Data::Results::Error.new(source: self.class, payload: storage, code: :storage_not_configured))
+        end
 
         def write_cache(key, httpx_session)
           access_token = httpx_session.instance_variable_get(:@options).oauth_session.access_token
@@ -80,8 +86,6 @@ module Storages
           end
         end
 
-        def cache_key(storage) = "storage.#{storage.id}.httpx_access_token"
-
         def http_with_current_token(access_token:, http_options:)
           opts = http_options.deep_merge({ headers: { "Authorization" => "Bearer #{access_token}" } })
           Success(OpenProject.httpx.with(opts))
@@ -94,13 +98,9 @@ module Storages
                             .with(http_options)
           Success(http)
         rescue HTTPX::HTTPError => e
-          Failure(Data::Result::Error.new(code: :unauthorized, payload: e.response, source: self.class))
+          Failure(Data::Results::Error.new(code: :unauthorized, payload: e.response, source: self.class))
         rescue HTTPX::TimeoutError => e
-          Failure(Data::Result::Error.new(code: :timeout, payload: e.to_s, source: self.class))
-        end
-
-        def build_failure(storage)
-          Failure(Data::Result::Error.new(source: self.class, payload: storage, code: :storage_not_configured))
+          Failure(Data::Results::Error.new(code: :timeout, payload: e.to_s, source: self.class))
         end
       end
     end

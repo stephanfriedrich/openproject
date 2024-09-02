@@ -30,22 +30,12 @@
 
 module Storages
   module Adapters
-    class Authentication
-      # resolves to a certain class of [AuthenticationStrategies] and instantiates it
-      # @param strategy [Data::StrategyData]
-      # @return [AuthenticationStrategy]
-      def self.[](strategy)
-        case strategy
-        in key: :noop
-          AuthenticationStrategies::Noop.new
-        in key: :basic_auth
-          AuthenticationStrategies::BasicAuth.new
-        in key: :oauth_user_token, user:
-          AuthenticationStrategies::OAuthUserToken.new(user)
-        in key: :oauth_client_credentials, use_cache:
-          AuthenticationStrategies::OAuthClientCredentials.new(use_cache)
-        else
-          raise ArgumentError, "Invalid authentication strategy '#{strategy.inspect}'"
+    module Data
+      module Results
+        Error = ::Data.define(:code, :payload, :source) do
+          def initialize(code:, source:, payload: nil)
+            super
+          end
         end
       end
     end

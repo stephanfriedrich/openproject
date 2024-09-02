@@ -35,20 +35,20 @@ module Storages
         def initialize(user)
           @user = user
           @retried = false
-          @error_data = Data::Result::Error.new(source: self.class, code: :error)
+          @error_data = Data::Results::Error.new(source: self.class, code: :error)
         end
 
         # rubocop:disable Metrics/AbcSize
         def call(storage:, http_options: {}, &)
-          return Failure(@error_data.with(code: :missing_oauth_client, payload: storage)) unless storage.oauth_client
+          oauth_client = validate_oauth_client(storage).value_or { return Failure(_1) }
+          token = current_token(oauth_client).value_or { return Failure(_1) }
 
-          token = current_token(storage.oauth_client).value_or { return Failure(_1) }
-          options = http_options.deep_merge({ headers: { "Authorization" => "Bearer #{token.access_token}" } })
+          options = http_options.deep_merge(headers: { "Authorization" => "Bearer #{token.access_token}" })
 
           original_response = yield OpenProject.httpx.with(options)
 
           case original_response
-          in Failure({code: :unauthorized})
+          in Failure(code: :unauthorized)
             refresh_and_retry(storage, token, options, &)
           else
             original_response
@@ -63,6 +63,12 @@ module Storages
         # rubocop:enable Metrics/AbcSize
 
         private
+
+        def validate_oauth_client(storage)
+          return Success(storage.oauth_client) if storage.oauth_client
+
+          Failure(@error_data.with(code: :missing_oauth_client, payload: storage))
+        end
 
         def refresh_and_retry(storage, token, options, &)
           config = storage.oauth_configuration.to_httpx_oauth_config.to_h

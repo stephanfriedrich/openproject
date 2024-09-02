@@ -30,11 +30,12 @@
 
 module Storages
   module Adapters
-    module Data
-      module Result
-        Error = ::Data.define(:code, :payload, :source) do
-          def initialize(code:, source:, payload: nil)
-            super
+    module Providers
+      module OneDrive
+        Registry = Dry::Container::Namespace.new("one_drive") do
+          namespace(:authentication) do
+            register(:userless, ->(use_cache = true) { Data::StrategyData.new(key: :oauth_client_credentials, use_cache:) })
+            register(:userbound, ->(user) { Data::StrategyData.new(key: :oauth_client_credentials, user:) })
           end
         end
       end
