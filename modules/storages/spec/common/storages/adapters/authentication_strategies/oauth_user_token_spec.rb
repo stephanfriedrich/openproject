@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -39,7 +41,7 @@ module Storages
         end
         let(:request_url) { "#{storage.uri}ocs/v1.php/cloud/user" }
         let(:http_options) { { headers: { "OCS-APIRequest" => "true", "Accept" => "application/json" } } }
-        let(:strategy_data) { Data::StrategyData.new(user:, key: :oauth_user_token) }
+        let(:strategy_data) { Input::Strategy.build(user:, key: :oauth_user_token) }
 
         subject(:Authentication) { described_class }
 
@@ -66,7 +68,7 @@ module Storages
 
         context "with not existent oauth token" do
           let(:user_without_token) { create(:user) }
-          let(:strategy_data) { Data::StrategyData.new(user: user_without_token, key: :oauth_user_token) }
+          let(:strategy_data) { Input::Strategy.build(user: user_without_token, key: :oauth_user_token) }
 
           it "must return unauthorized" do
             result = Authentication[strategy_data].call(storage:, http_options:) { |http| make_request(http) }
@@ -137,7 +139,7 @@ module Storages
         end
 
         def error(code)
-          Failure(Data::Results::Error.new(source: "EXECUTING_QUERY", code:))
+          Failure(Results::Error.new(source: "EXECUTING_QUERY", code:))
         end
       end
     end

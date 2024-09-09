@@ -35,7 +35,7 @@ module Storages
         def initialize(user)
           @user = user
           @retried = false
-          @error_data = Data::Results::Error.new(source: self.class, code: :error)
+          @error_data = Results::Error.new(source: self.class, code: :error)
         end
 
         # rubocop:disable Metrics/AbcSize

@@ -30,17 +30,13 @@
 
 module Storages
   module Adapters
-    module Providers
-      module OneDrive
-        Registry = Dry::Container::Namespace.new("one_drive") do
-          namespace(:authentication) do
-            register(:userless, ->(use_cache = true) { Input::Strategy.build(key: :oauth_client_credentials, use_cache:) })
-            register(:userbound, ->(user) { Input::Strategy.build(key: :oauth_client_credentials, user:) })
-          end
-
-          namespace(:commands) do
-            register(:set_permissions, Commands::SetPermissionsCommand)
-          end
+    module Input
+      class StrategyContract < Dry::Validation::Contract
+        params do
+          # The included list need to be made dynamic
+          required(:key).filled(:symbol, included_in?: %i[noop basic_auth oauth_client_credentials oauth_user_token])
+          optional(:user).maybe(type?: User)
+          optional(:use_cache).maybe(:bool)
         end
       end
     end

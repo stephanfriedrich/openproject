@@ -68,7 +68,7 @@ module Storages
           config = storage.oauth_configuration.to_httpx_oauth_config
           return Success(config) if config.valid?
 
-          Failure(Data::Results::Error.new(source: self.class, payload: storage, code: :storage_not_configured))
+          Failure(Results::Error.new(source: self.class, payload: storage, code: :storage_not_configured))
         end
 
         def write_cache(key, httpx_session)
@@ -98,9 +98,9 @@ module Storages
                             .with(http_options)
           Success(http)
         rescue HTTPX::HTTPError => e
-          Failure(Data::Results::Error.new(code: :unauthorized, payload: e.response, source: self.class))
+          Failure(Results::Error.new(code: :unauthorized, payload: e.response, source: self.class))
         rescue HTTPX::TimeoutError => e
-          Failure(Data::Results::Error.new(code: :timeout, payload: e.to_s, source: self.class))
+          Failure(Results::Error.new(code: :timeout, payload: e.to_s, source: self.class))
         end
       end
     end

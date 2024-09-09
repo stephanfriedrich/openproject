@@ -30,17 +30,20 @@
 
 module Storages
   module Adapters
-    module Providers
-      module OneDrive
-        Registry = Dry::Container::Namespace.new("one_drive") do
-          namespace(:authentication) do
-            register(:userless, ->(use_cache = true) { Input::Strategy.build(key: :oauth_client_credentials, use_cache:) })
-            register(:userbound, ->(user) { Input::Strategy.build(key: :oauth_client_credentials, user:) })
-          end
+    module Input
+      Strategy = Data.define(:key, :user, :use_cache) do
+        private_class_method :new
 
-          namespace(:commands) do
-            register(:set_permissions, Commands::SetPermissionsCommand)
-          end
+        def self.build(key:, user: nil, use_cache: true, contract: StrategyContract.new)
+          contract.call(key:, user:, use_cache:).to_monad.fmap { |result| new(**result.to_h) }
+        end
+
+        def with_user(user)
+          with(user:)
+        end
+
+        def with_cache(use_cache)
+          with(use_cache:)
         end
       end
     end

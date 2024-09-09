@@ -44,7 +44,7 @@ module Storages
         let(:request_url) { "#{storage.uri}ocs/v1.php/cloud/user" }
         let(:http_options) { { headers: { "OCS-APIRequest" => "true", "Accept" => "application/json" } } }
 
-        let(:strategy_data) { Data::StrategyData.new(key: :basic_auth) }
+        let(:strategy_data) { Input::Strategy.build(key: :basic_auth) }
 
         context "with valid credentials", vcr: "auth/nextcloud/basic_auth" do
           before do
@@ -106,7 +106,7 @@ module Storages
         end
 
         def error(code)
-          Failure(Data::Results::Error.new(source: "EXECUTING_QUERY", code:))
+          Failure(Results::Error.new(source: "EXECUTING_QUERY", code:))
         end
       end
     end

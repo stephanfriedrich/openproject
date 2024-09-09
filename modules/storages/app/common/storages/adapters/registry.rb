@@ -67,6 +67,9 @@ module Storages
       end
 
       config.resolver = Resolver.new
+
+      # Need to make this dynamic to ease new providers to be registered
+      import Providers::OneDrive::Registry
     end
   end
 end

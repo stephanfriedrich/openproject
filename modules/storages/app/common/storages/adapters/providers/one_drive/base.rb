@@ -30,11 +30,31 @@
 
 module Storages
   module Adapters
-    module Data
-      module Results
-        Error = ::Data.define(:code, :payload, :source) do
-          def initialize(code:, source:, payload: nil)
-            super
+    module Providers
+      module OneDrive
+        class Base
+          include TaggedLogging
+          include Dry::Monads[:result]
+
+          def initialize(storage)
+            @storage = storage
+          end
+
+          # @param error [Results::Error]
+          def log_storage_error(error, context = {})
+            data = case error.payload
+                   in { status: Integer }
+                     { status: error.payload&.status, body: error.payload&.body.to_s }
+                   else
+                     error.payload.to_s
+                   end
+
+            error_message = context.merge({ error_code: error.code, data: })
+            error error_message
+          end
+
+          def base_uri
+            URI.parse(UrlBuilder.url(@storage.uri, "/v1.0/drives", @storage.drive_id))
           end
         end
       end

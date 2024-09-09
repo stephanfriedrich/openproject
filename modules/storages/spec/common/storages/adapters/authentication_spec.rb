@@ -36,10 +36,10 @@ module Storages
     RSpec.describe Authentication, :webmock do
       let(:user) { create(:user) }
 
-      let(:noop) { Data::StrategyData.new(key: :noop) }
-      let(:basic_auth) { Data::StrategyData.new(key: :basic_auth) }
-      let(:oauth_client_credentials) { Data::StrategyData.new(key: :oauth_client_credentials, use_cache: false) }
-      let(:oauth_user_token) { Data::StrategyData.new(key: :oauth_user_token, user:) }
+      let(:noop) { Input::Strategy.build(key: :noop) }
+      let(:basic_auth) { Input::Strategy.build(key: :basic_auth) }
+      let(:oauth_client_credentials) { Input::Strategy.build(key: :oauth_client_credentials, use_cache: false) }
+      let(:oauth_user_token) { Input::Strategy.build(key: :oauth_user_token, user:) }
 
       subject(:auth) { described_class }
 
@@ -51,7 +51,8 @@ module Storages
       end
 
       it "returns an error if an unknown strategy is requested" do
-        expect { auth[noop.with(key: :unknown)] }.to raise_error ArgumentError
+        broken = Input::Strategy.build(key: :unknown)
+        expect { auth[broken] }.to raise_error ArgumentError
       end
     end
   end

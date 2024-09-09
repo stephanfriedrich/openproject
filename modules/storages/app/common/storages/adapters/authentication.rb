@@ -31,18 +31,20 @@
 module Storages
   module Adapters
     class Authentication
+      include Dry::Monads[:result]
+
       # resolves to a certain class of [AuthenticationStrategies] and instantiates it
-      # @param strategy [Data::StrategyData]
+      # @param strategy [Input::Strategy]
       # @return [AuthenticationStrategy]
       def self.[](strategy)
         case strategy
-        in key: :noop
+        in Success(key: :noop)
           AuthenticationStrategies::Noop.new
-        in key: :basic_auth
+        in Success(key: :basic_auth)
           AuthenticationStrategies::BasicAuth.new
-        in key: :oauth_user_token, user:
+        in Success(key: :oauth_user_token, user:)
           AuthenticationStrategies::OAuthUserToken.new(user)
-        in key: :oauth_client_credentials, use_cache:
+        in Success(key: :oauth_client_credentials, use_cache:)
           AuthenticationStrategies::OAuthClientCredentials.new(use_cache)
         else
           raise ArgumentError, "Invalid authentication strategy '#{strategy.inspect}'"

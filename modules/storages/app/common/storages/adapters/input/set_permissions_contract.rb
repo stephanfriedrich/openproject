@@ -30,17 +30,23 @@
 
 module Storages
   module Adapters
-    module Providers
-      module OneDrive
-        Registry = Dry::Container::Namespace.new("one_drive") do
-          namespace(:authentication) do
-            register(:userless, ->(use_cache = true) { Input::Strategy.build(key: :oauth_client_credentials, use_cache:) })
-            register(:userbound, ->(user) { Input::Strategy.build(key: :oauth_client_credentials, user:) })
+    module Input
+      class SetPermissionsContract < Dry::Validation::Contract
+        params do
+          required(:file_id).filled(:string)
+          required(:user_permissions).array(:hash) do
+            optional(:user_id).filled(:string)
+            optional(:group_id).filled(:string)
+            required(:permissions)
+              .array(:symbol, included_in?: OpenProject::Storages::Engine.external_file_permissions)
           end
+        end
 
-          namespace(:commands) do
-            register(:set_permissions, Commands::SetPermissionsCommand)
-          end
+        rule(:user_permissions).each do
+          both = value.key?(:user_id) && value.key?(:group_id)
+          none = !value.key?(:user_id) && !value.key?(:group_id)
+
+          key.failure("must have either user_id or group_id") if both || none
         end
       end
     end

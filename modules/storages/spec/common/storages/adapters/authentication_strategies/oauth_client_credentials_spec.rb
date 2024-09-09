@@ -38,7 +38,7 @@ module Storages
         let(:user) { create(:user) }
         let(:storage) { create(:sharepoint_dev_drive_storage, oauth_client_token_user: user) }
 
-        let(:strategy_data) { Data::StrategyData.new(key: :oauth_client_credentials, use_cache: false) }
+        let(:strategy_data) { Input::Strategy.build(key: :oauth_client_credentials, use_cache: false) }
         let(:request_url) { "#{storage.uri}v1.0/drives" }
 
         context "with valid oauth credentials", vcr: "auth/one_drive/client_credentials" do
@@ -50,7 +50,8 @@ module Storages
           end
 
           it "caches the token if use_cache is true" do
-            Authentication[strategy_data.with(use_cache: true)].call(storage:, http_options: {}) do |http|
+            strategy_data = Input::Strategy.build(key: :oauth_client_credentials, use_cache: true)
+            Authentication[strategy_data].call(storage:, http_options: {}) do |http|
               make_request(http)
             end
 
@@ -97,7 +98,7 @@ module Storages
         end
 
         def error(code)
-          Failure(Data::Results::Error.new(source: "EXECUTING_QUERY", code:))
+          Failure(Results::Error.new(source: "EXECUTING_QUERY", code:))
         end
       end
     end
