@@ -44,19 +44,18 @@ module Storages
 
             let(:auth_strategy) { Adapters::Registry.resolve("one_drive.authentication.userless")[false] }
 
+            let(:test_folder_data) do
+              Input::CreateFolder.build(folder_name: "Permission Test Folder", parent_location: "/").value!
+            end
+
             let(:test_folder) do
               Registry.resolve("one_drive.commands.create_folder")
-                .call(storage:,
-                      auth_strategy:,
-                      folder_name: "Permission Test Folder",
-                      parent_location: Peripherals::ParentFolder.new("/"))
-                .value!
+                      .call(storage:, auth_strategy:, input_data: test_folder_data).value!
             end
 
             it_behaves_like "adapter set_permissions_command: basic command setup"
 
             context "if folder does not exists", vcr: "one_drive/set_permissions_not_found_folder" do
-              let(:error_source) { described_class }
               let(:input_data) { permission_input_data("THIS_IS_NOT_THE_FOLDER_YOURE_LOOKING_FOR", []) }
 
               it_behaves_like "adapter set_permissions_command: not found"

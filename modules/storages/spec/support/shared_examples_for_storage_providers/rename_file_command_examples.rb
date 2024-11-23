@@ -28,10 +28,9 @@
 # See COPYRIGHT and LICENSE files for more details.
 #++
 
-RSpec.shared_examples_for "adapter set_permissions_command: basic command setup" do
-  it "is registered as commands.set_permissions" do
-    expect(Storages::Adapters::Registry
-             .resolve("#{storage}.commands.set_permissions")).to eq(described_class)
+RSpec.shared_examples_for "adapter rename_file_command: basic command setup" do
+  it "is registered as commands.rename_file" do
+    expect(Storages::Adapters::Registry.resolve("#{storage}.commands.rename_file")).to eq(described_class)
   end
 
   it "responds to #call with correct parameters" do
@@ -42,58 +41,20 @@ RSpec.shared_examples_for "adapter set_permissions_command: basic command setup"
   end
 end
 
-RSpec.shared_examples_for "adapter set_permissions_command: replaces already set permissions" do
-  it "replaces fully the previously set permissions" do
-    file_id = test_folder.id
-    input_data = Storages::Adapters::Input::SetPermissions.build(file_id:, user_permissions: previous_permissions).value!
+RSpec.shared_examples_for "adapter rename_file_command: successful file renaming" do
+  it "returns success and the renamed file" do
     result = described_class.call(storage:, auth_strategy:, input_data:)
 
     expect(result).to be_success
-    expect(current_remote_permissions).to eq(previous_permissions)
 
-    input_data = Storages::Adapters::Input::SetPermissions.build(file_id:, user_permissions: replacing_permissions).value!
-    result = described_class.call(storage:, auth_strategy:, input_data:)
-
-    expect(result).to be_success
-    expect(current_remote_permissions).to eq(replacing_permissions)
-  ensure
-    clean_up file_id
+    response = result.value!
+    expect(response).to be_a(Storages::StorageFile)
+    expect(response.id).to eq(file_id)
+    expect(response.name).to eq(name)
   end
 end
 
-RSpec.shared_examples_for "adapter set_permissions_command: creates new permissions" do
-  it "creates the new permissions" do
-    file_id = test_folder.id
-
-    expect(current_remote_permissions).to eq([])
-
-    input_data = Storages::Adapters::Input::SetPermissions.build(file_id:, user_permissions:).value!
-    result = described_class.call(storage:, auth_strategy:, input_data:)
-
-    expect(result).to be_success
-    expect(current_remote_permissions).to eq(user_permissions)
-  ensure
-    clean_up file_id
-  end
-end
-
-RSpec.shared_examples_for "adapter set_permissions_command: unknown remote identity" do
-  it "returns a failure" do
-    file_id = test_folder.id
-    input_data = Storages::Adapters::Input::SetPermissions.build(file_id:, user_permissions:).value!
-    result = described_class.call(storage:, auth_strategy:, input_data:)
-
-    expect(result).to be_failure
-
-    error = result.failure
-    expect(error.code).to eq(:unknown_remote_identity)
-    expect(error.source).to eq(described_class)
-  ensure
-    clean_up file_id
-  end
-end
-
-RSpec.shared_examples_for "adapter set_permissions_command: not found" do
+RSpec.shared_examples_for "adapter rename_file_command: not found" do
   it "returns a failure" do
     result = described_class.call(storage:, auth_strategy:, input_data:)
 
@@ -105,7 +66,7 @@ RSpec.shared_examples_for "adapter set_permissions_command: not found" do
   end
 end
 
-RSpec.shared_examples_for "adapter set_permissions_command: error" do
+RSpec.shared_examples_for "adapter rename_file_command: error" do
   it "returns a failure" do
     result = described_class.call(storage:, auth_strategy:, input_data:)
 
