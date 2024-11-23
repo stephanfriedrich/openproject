@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -29,11 +31,33 @@
 module Storages
   module Adapters
     module Input
-      CreateFolder = Data.define(:folder_name, :parent_location) do
-        private_class_method :new
+      RSpec.describe CreateFolder do
+        subject(:input) { described_class }
 
-        def self.build(folder_name:, parent_location:, contract: CreateFolderContract.new)
-          contract.call(folder_name:, parent_location:).to_monad.fmap { |it| new(**it.to_h) }
+        describe ".new" do
+          it "discourages direct instantiation" do
+            expect { described_class.new(file_id: "file_id", user_permissions: []) }
+              .to raise_error(NoMethodError, /private method `new'/)
+          end
+        end
+
+        describe ".build" do
+          it "creates a success result for valid input data" do
+            expect(input.build(parent_location: "/", folder_name: "DeathStar")).to be_success
+          end
+
+          it "coerces the parent folder into a ParentFolder object" do
+            result = input.build(parent_location: "/", folder_name: "DeathStar").value!
+
+            expect(result.parent_location).to be_a(Peripherals::ParentFolder)
+          end
+
+          it "creates a failure result for invalid input data" do
+            expect(input.build(parent_location: "/", folder_name: 1)).to be_failure
+            expect(input.build(parent_location: "/", folder_name: "")).to be_failure
+            expect(input.build(parent_location: 1, folder_name: "DeathStar")).to be_failure
+            expect(input.build(parent_location: "", folder_name: "DeathStar")).to be_failure
+          end
         end
       end
     end

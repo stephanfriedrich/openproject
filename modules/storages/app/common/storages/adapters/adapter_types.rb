@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -28,14 +30,10 @@
 
 module Storages
   module Adapters
-    module Input
-      CreateFolder = Data.define(:folder_name, :parent_location) do
-        private_class_method :new
+    module AdapterTypes
+      include Dry.Types()
 
-        def self.build(folder_name:, parent_location:, contract: CreateFolderContract.new)
-          contract.call(folder_name:, parent_location:).to_monad.fmap { |it| new(**it.to_h) }
-        end
-      end
+      Location = AdapterTypes.Constructor(Peripherals::ParentFolder)
     end
   end
 end

@@ -34,19 +34,19 @@ module Storages
       module OneDrive
         module Commands
           class CreateFolderCommand < Base
-            def self.call(storage:, auth_strategy:, folder_name:, parent_location:)
-              new(storage).call(auth_strategy:, folder_name:, parent_location:)
+            def self.call(storage:, auth_strategy:, input_data:)
+              new(storage).call(auth_strategy:, input_data:)
             end
 
             def initialize(storage)
               @storage = storage
             end
 
-            def call(auth_strategy:, folder_name:, parent_location:)
+            def call(auth_strategy:, input_data:)
               with_tagged_logger do
-                info "Creating folder #{folder_name} under #{parent_location}"
+                info "Creating folder with args: #{input_data.inspect} | #{auth_strategy.inspect}"
                 Authentication[auth_strategy].call(storage: @storage) do |http|
-                  handle_response http.post(url_for(parent_location), body: payload(folder_name))
+                  handle_response http.post(url_for(input_data.parent_location), body: payload(input_data.folder_name))
                 end
               end
             end

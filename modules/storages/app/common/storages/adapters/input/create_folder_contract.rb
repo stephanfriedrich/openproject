@@ -32,7 +32,7 @@ module Storages
       class CreateFolderContract < Dry::Validation::Contract
         params do
           required(:folder_name).filled(:string)
-          required(:parent_location).filled(:string)
+          required(:parent_location).filter(:filled?, :str?).value(AdapterTypes::Location)
         end
       end
     end

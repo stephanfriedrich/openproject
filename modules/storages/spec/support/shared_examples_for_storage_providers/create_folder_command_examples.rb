@@ -37,16 +37,13 @@ RSpec.shared_examples_for "adapter create_folder_command: basic command setup" d
     expect(described_class).to respond_to(:call)
 
     method = described_class.method(:call)
-    expect(method.parameters).to contain_exactly(%i[keyreq storage],
-                                                 %i[keyreq auth_strategy],
-                                                 %i[keyreq folder_name],
-                                                 %i[keyreq parent_location])
+    expect(method.parameters).to contain_exactly(%i[keyreq storage], %i[keyreq auth_strategy], %i[keyreq input_data])
   end
 end
 
 RSpec.shared_examples_for "adapter create_folder_command: successful folder creation" do
   it "creates a folder" do
-    result = described_class.call(storage:, auth_strategy:, folder_name:, parent_location:)
+    result = described_class.call(storage:, auth_strategy:, input_data:)
 
     expect(result).to be_success
 
@@ -61,19 +58,19 @@ end
 
 RSpec.shared_examples_for "adapter create_folder_command: parent not found" do
   it "returns a failure" do
-    result = described_class.call(storage:, auth_strategy:, folder_name:, parent_location:)
+    result = described_class.call(storage:, auth_strategy:, input_data:)
 
     expect(result).to be_failure
 
     error = result.failure
     expect(error.code).to eq(:not_found)
-    expect(error.source).to eq(error_source)
+    expect(error.source).to eq(described_class)
   end
 end
 
 RSpec.shared_examples_for "adapter create_folder_command: folder already exists" do
   it "returns a failure" do
-    result = described_class.call(storage:, auth_strategy:, folder_name:, parent_location:)
+    result = described_class.call(storage:, auth_strategy:, input_data:)
 
     expect(result).to be_failure
 
