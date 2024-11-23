@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -28,45 +26,16 @@
 # See COPYRIGHT and LICENSE files for more details.
 #++
 
-require "dry/container"
-
 module Storages
   module Adapters
-    class Registry
-      extend Dry::Container::Mixin
+    module Input
+      CreateFolder = Data.define do
+        private_class_method :new
 
-      # Extracts the known_providers from the registered keys
-      # @return [Array<String>]
-      def self.known_providers
-        keys.map { _1.split(".").first }.uniq
-      end
-
-      namespace("one_drive") do
-        namespace("contracts") do
-          register(:storage, "Contract")
+        def self.build(folder_name:, parent_location:, contract: CreateFolderContract.new)
+          contract.call(folder_name:, parent_location:).to_monad.fmap { |it| new(**it.to_h) }
         end
       end
-
-      class Resolver < Dry::Container::Resolver
-        include TaggedLogging
-
-        def call(container, key)
-          with_tagged_logger("Adapters::Registry") do
-            info "Resolving #{key}"
-            super
-          end
-        rescue Dry::Container::KeyError
-          error = Errors.registry_error_for(key)
-
-          with_tagged_logger("Adapters::Registry") { error error.message }
-          raise error
-        end
-      end
-
-      config.resolver = Resolver.new
-
-      # Need to make this dynamic to ease new providers to be registered
-      import Providers::OneDrive::OneDriveRegistry
     end
   end
 end

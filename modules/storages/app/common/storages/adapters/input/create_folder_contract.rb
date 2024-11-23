@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -30,8 +28,13 @@
 
 module Storages
   module Adapters
-    module Types
-      include Dry.Types()
+    module Input
+      class CreateFolderContract < Dry::Validation::Contract
+        params do
+          required(:folder_name).filled(:string)
+          required(:parent_location).filled(:string)
+        end
+      end
     end
   end
 end

@@ -36,6 +36,7 @@ module Storages
       OperationNotSupported = Class.new(ResolverStandardError)
       MissingModel = Class.new(ResolverStandardError)
       UnknownProvider = Class.new(ResolverStandardError)
+      UnknownAuthenticationStrategy = Class.new(ArgumentError)
 
       def self.registry_error_for(key)
         case key.split(".")

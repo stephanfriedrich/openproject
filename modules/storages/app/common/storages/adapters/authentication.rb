@@ -37,17 +37,19 @@ module Storages
       # @param strategy [Input::Strategy]
       # @return [AuthenticationStrategy]
       def self.[](strategy)
-        case strategy
-        in Success(key: :noop)
+        auth = strategy.value_or { |it| raise ArgumentError, "Invalid authentication strategy '#{it.inspect}'" }
+
+        case auth.key
+        when :noop
           AuthenticationStrategies::Noop.new
-        in Success(key: :basic_auth)
+        when :basic_auth
           AuthenticationStrategies::BasicAuth.new
-        in Success(key: :oauth_user_token, user:)
-          AuthenticationStrategies::OAuthUserToken.new(user)
-        in Success(key: :oauth_client_credentials, use_cache:)
-          AuthenticationStrategies::OAuthClientCredentials.new(use_cache)
+        when :oauth_user_token
+          AuthenticationStrategies::OAuthUserToken.new(auth.user)
+        when :oauth_client_credentials
+          AuthenticationStrategies::OAuthClientCredentials.new(auth.use_cache)
         else
-          raise ArgumentError, "Invalid authentication strategy '#{strategy.inspect}'"
+          raise Errors::UnknownAuthenticationStrategy, "Unknown #{auth.key} authentication scheme"
         end
       end
     end

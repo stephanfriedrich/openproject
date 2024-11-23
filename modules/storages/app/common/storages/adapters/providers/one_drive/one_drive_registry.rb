@@ -32,14 +32,15 @@ module Storages
   module Adapters
     module Providers
       module OneDrive
-        Registry = Dry::Container::Namespace.new("one_drive") do
+        OneDriveRegistry = Dry::Container::Namespace.new("one_drive") do
           namespace(:authentication) do
             register(:userless, ->(use_cache = true) { Input::Strategy.build(key: :oauth_client_credentials, use_cache:) })
-            register(:userbound, ->(user) { Input::Strategy.build(key: :oauth_client_credentials, user:) })
+            register(:user_bound, ->(user) { Input::Strategy.build(key: :oauth_client_credentials, user:) })
           end
 
           namespace(:commands) do
             register(:set_permissions, Commands::SetPermissionsCommand)
+            register(:create_folder, Commands::CreateFolderCommand)
           end
         end
       end

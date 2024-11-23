@@ -36,14 +36,6 @@ module Storages
           class SetPermissionsCommand < Base
             include Dry::Monads::Do.for(:call)
 
-            FILTER_LAMBDA = lambda do |role, permission|
-              next unless permission[:roles].member?(role)
-
-              permission[:id]
-            end.curry
-
-            private_constant :FILTER_LAMBDA
-
             PermissionUpdateData = ::Data.define(:role, :permission_ids, :user_ids, :drive_item_id) do
               def create? = permission_ids.empty? && user_ids.any?
 
@@ -51,6 +43,14 @@ module Storages
 
               def update? = permission_ids.any? && user_ids.any?
             end
+
+            PermissionFilter = lambda do |role, permission|
+              next unless permission[:roles].member?(role)
+
+              permission[:id]
+            end.curry
+
+            private_constant :PermissionFilter, :PermissionUpdateData
 
             # Instantiates the command and executes it.
             #
@@ -148,14 +148,14 @@ module Storages
             end
 
             def extract_permission_ids(permission_set)
-              write_permissions = permission_set.filter_map(&FILTER_LAMBDA.call("write"))
-              read_permissions = permission_set.filter_map(&FILTER_LAMBDA.call("read"))
+              write_permissions = permission_set.filter_map(&PermissionFilter.call("write"))
+              read_permissions = permission_set.filter_map(&PermissionFilter.call("read"))
 
               { read: read_permissions, write: write_permissions }
             end
 
             def handle_response(response)
-              source = self.class
+              error = Results::Error.new(payload: response, source: self.class)
 
               case response
               in { status: 200 }
@@ -163,15 +163,15 @@ module Storages
               in { status: 204 }
                 Success(result: response)
               in { status: 400 }
-                Failure(Results::Error.new(payload: response, code: :bad_request, source:))
+                Failure(error.with(code: :bad_request))
               in { status: 401 }
-                Failure(Results::Error.new(payload: response, code: :unauthorized, source:))
+                Failure(error.with(code: :unauthorized))
               in { status: 403 }
-                Failure(Results::Error.new(payload: response, code: :forbidden, source:))
+                Failure(error.with(code: :forbidden))
               in { status: 404 }
-                Failure(Results::Error.new(payload: response, code: :not_found, source:))
+                Failure(error.with(code: :not_found))
               else
-                Failure(Results::Error.new(payload: response, code: :error, source:))
+                Failure(error.with(code: :error))
               end
             end
 

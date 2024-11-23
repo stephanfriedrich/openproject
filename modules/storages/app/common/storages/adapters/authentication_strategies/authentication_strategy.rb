@@ -36,7 +36,7 @@ module Storages
         include Dry::Monads[:result]
 
         def call(**)
-          raise ::Storages::Errors::SubclassResponsibility
+          raise Errors::SubclassResponsibility
         end
       end
     end

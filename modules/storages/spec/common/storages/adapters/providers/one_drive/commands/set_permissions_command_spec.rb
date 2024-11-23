@@ -42,18 +42,15 @@ module Storages
                      drive_id: "b!dmVLG22QlE2PSW0AqVB7UOhZ8n7tjkVGkgqLNnuw2ODRDvn3haLiQIhB5UYNdqMy")
             end
 
-            let(:auth_strategy) do
-              Adapters::Registry.resolve("one_drive.authentication.userless")[false]
-            end
+            let(:auth_strategy) { Adapters::Registry.resolve("one_drive.authentication.userless")[false] }
 
             let(:test_folder) do
-              Peripherals::Registry
-                .resolve("one_drive.commands.create_folder")
+              Registry.resolve("one_drive.commands.create_folder")
                 .call(storage:,
-                      auth_strategy: setup_strat,
+                      auth_strategy:,
                       folder_name: "Permission Test Folder",
                       parent_location: Peripherals::ParentFolder.new("/"))
-                .result
+                .value!
             end
 
             it_behaves_like "adapter set_permissions_command: basic command setup"
@@ -147,6 +144,7 @@ module Storages
 
             private
 
+            # remove once all commands are moved
             def setup_strat
               Peripherals::StorageInteraction::AuthenticationStrategies::OAuthClientCredentials
                 .strategy

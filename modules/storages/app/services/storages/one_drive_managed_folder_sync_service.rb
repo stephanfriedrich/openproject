@@ -30,8 +30,8 @@
 
 module Storages
   class OneDriveManagedFolderSyncService < BaseService
-    include Injector["one_drive.commands.create_folder", "one_drive.commands.rename_file",
-                     "one_drive.commands.set_permissions", "one_drive.queries.files", "one_drive.authentication.userless"]
+    include AdapterInjector["one_drive.commands.create_folder", "one_drive.commands.rename_file",
+                            "one_drive.commands.set_permissions", "one_drive.queries.files", "one_drive.authentication.userless"]
 
     using Peripherals::ServiceResultRefinements
 
