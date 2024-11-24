@@ -32,5 +32,4 @@ require "dry/auto_inject"
 
 module Storages
   Injector = Dry::AutoInject(Peripherals::Registry)
-  AdapterInjector = Dry::AutoInject(Adapters::Registry)
 end

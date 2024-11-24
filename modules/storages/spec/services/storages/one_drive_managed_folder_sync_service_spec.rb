@@ -342,8 +342,8 @@ RSpec.describe Storages::OneDriveManagedFolderSyncService, :webmock do
           service.call
 
           expect(Rails.logger)
-            .to have_received(:error)
-                  .with(error_code: :request_error, drive_id: storage.drive_id, message: nil, data: /drive id/)
+            .to have_received(:error).with(error_code: :request_error, drive_id: storage.drive_id,
+                                           data: { body: /drive id/, status: 400 })
         end
       end
 
@@ -355,7 +355,6 @@ RSpec.describe Storages::OneDriveManagedFolderSyncService, :webmock do
         expect(Rails.logger)
           .to have_received(:error)
                 .with(command: described_class,
-                      message: nil,
                       data: { body: /timed out while waiting on select/, status: nil })
       end
 
@@ -382,8 +381,7 @@ RSpec.describe Storages::OneDriveManagedFolderSyncService, :webmock do
             .to have_received(:error)
                   .with(folder_name: "[Sample] Project Name _ Ehuu (#{project.id})",
                         error_code: :conflict,
-                        message: nil,
-                        data: /nameAlreadyExists/)
+                        data: { body: /nameAlreadyExists/, status: 409 })
         ensure
           delete_folder(already_existing_folder.id)
         end
@@ -406,8 +404,7 @@ RSpec.describe Storages::OneDriveManagedFolderSyncService, :webmock do
             .to have_received(:error).with(folder_id: project_storage.project_folder_id,
                                            folder_name: "[Sample] Project Name _ Ehuu (#{project.id})",
                                            error_code: :conflict,
-                                           message: nil,
-                                           data: /nameAlreadyExists/)
+                                           data: { body: /nameAlreadyExists/, status: 409 })
         ensure
           delete_folder(already_existing_folder.result.id)
         end
@@ -421,8 +418,7 @@ RSpec.describe Storages::OneDriveManagedFolderSyncService, :webmock do
           expect(Rails.logger)
             .to have_received(:error)
                   .with(error_code: :bad_request,
-                        message: nil,
-                        data: /noResolvedUsers/).twice
+                        data: { body: /noResolvedUsers/, status: 400 }).twice
         end
       end
     end

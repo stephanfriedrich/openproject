@@ -68,7 +68,7 @@ module Storages
               in { status: 200..299 }
                 Success(response.json(symbolize_keys: true))
               in { status: 400 }
-                Failure(error.with(code: :bad_request))
+                Failure(error.with(code: :request_error))
               in { status: 404 }
                 Failure(error.with(code: :not_found))
               in { status: 403 }

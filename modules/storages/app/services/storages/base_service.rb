@@ -32,6 +32,7 @@ module Storages
   class BaseService
     extend ActiveModel::Naming
     extend ActiveModel::Translation
+    include Dry::Monads[:result]
 
     include TaggedLogging
 

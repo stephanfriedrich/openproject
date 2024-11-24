@@ -44,7 +44,7 @@ module Storages
 
             def call(auth_strategy:, input_data:)
               with_tagged_logger do
-                info "Creating folder with args: #{input_data.inspect} | #{auth_strategy.inspect}"
+                info "Creating folder with args: #{input_data.to_h} | #{auth_strategy.value_or({}).to_h}"
                 Authentication[auth_strategy].call(storage: @storage) do |http|
                   handle_response http.post(url_for(input_data.parent_location), body: payload(input_data.folder_name))
                 end
@@ -73,7 +73,7 @@ module Storages
               in { status: 401 }
                 Failure(error.with(code: :unauthorized))
               in { status: 409 }
-                Failure(error.with(code: :already_exists))
+                Failure(error.with(code: :conflict))
               else
                 Failure(error.with(code: :error))
               end

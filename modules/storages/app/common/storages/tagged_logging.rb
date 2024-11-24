@@ -38,6 +38,22 @@ module Storages
       logger.tagged(*tag, &)
     end
 
+    # @param error [Storages::Adapters::Results::Error] an instance of Storages::Adapters::Results::Error
+    # @param context [Hash{Symbol => Object}] extra metadata that will be appended to the logs
+    def log_adapter_error(error, context = {})
+      payload = error.payload
+      data =
+        case payload
+        in { status: Integer }
+          { status: payload&.status, body: payload&.body.to_s }
+        else
+          payload.to_s
+        end
+
+      error_message = context.merge({ error_code: error.code, data: })
+      error error_message
+    end
+
     # @param storage_error [Storages::StorageError] an instance of Storages::StorageError
     # @param context [Hash{Symbol => Object}] extra metadata that will be appended to the logs
     def log_storage_error(storage_error, context = {})
@@ -54,10 +70,10 @@ module Storages
       error error_message
     end
 
+    # @param validation_result [Dry::Validation::Result]
+    # @param context [Hash{Symbol, Object}]
     def log_validation_error(validation_result, context = {})
-      # rubocop:disable Rails/DeprecatedActiveModelErrorsMethods
       error context.merge({ validation_message: validation_result.errors.to_h })
-      # rubocop:enable Rails/DeprecatedActiveModelErrorsMethods
     end
 
     def logger
