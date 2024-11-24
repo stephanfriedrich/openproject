@@ -67,7 +67,7 @@ module Storages
               case response
               in { status: 200..299 }
                 info "Folder successfully created."
-                Success(StorageFileTransformer.new.transform(response.json(symbolize_keys: true)))
+                StorageFileTransformer.new.transform(response.json(symbolize_keys: true))
               in { status: 404 }
                 Failure(error.with(code: :not_found))
               in { status: 401 }

@@ -30,11 +30,14 @@
 
 module Storages
   module Adapters
-    module AdapterTypes
-      include Dry.Types()
+    module Input
+      Files = Data.define(:folder) do
+        private_class_method :new
 
-      Location = AdapterTypes.Constructor(Peripherals::ParentFolder)
-      StorageFileInstance = AdapterTypes.Instance(Results::StorageFile)
+        def self.build(folder:, contract: FilesContract.new)
+          contract.call(folder:).to_monad.fmap { |it| new(**it.to_h) }
+        end
+      end
     end
   end
 end

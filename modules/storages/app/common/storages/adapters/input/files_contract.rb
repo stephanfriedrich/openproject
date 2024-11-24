@@ -30,11 +30,12 @@
 
 module Storages
   module Adapters
-    module AdapterTypes
-      include Dry.Types()
-
-      Location = AdapterTypes.Constructor(Peripherals::ParentFolder)
-      StorageFileInstance = AdapterTypes.Instance(Results::StorageFile)
+    module Input
+      class FilesContract < Dry::Validation::Contract
+        params do
+          required(:folder).filter(:filled?, :str?).value(AdapterTypes::Location)
+        end
+      end
     end
   end
 end

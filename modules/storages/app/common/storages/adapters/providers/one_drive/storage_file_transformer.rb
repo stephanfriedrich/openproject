@@ -32,11 +32,9 @@ module Storages
   module Adapters
     module Providers
       module OneDrive
-        # Should we try to do this via dry/transformer?
-        # We could add a couple of extra transformations to deal with mime type and folder extraction
         class StorageFileTransformer
           def transform(json)
-            StorageFile.new(
+            Results::StorageFile.build(
               id: json[:id],
               name: json[:name],
               size: json[:size],
@@ -48,6 +46,16 @@ module Storages
               location: UrlBuilder.path(extract_location(json[:parentReference], json[:name])),
               permissions: %i[readable writeable]
             )
+          end
+
+          def bare_transform(id:, location:)
+            Results::StorageFile.new(id:, name: location.split("/").last, location: UrlBuilder.path(location),
+                                     permissions: %i[readable writeable])
+          end
+
+          def parent_transform(id:, location:, name:)
+            Results::StorageFile.new(id:, name:, location: UrlBuilder.path(extract_location(location)),
+                                     permissions: %i[readable writeable])
           end
 
           private

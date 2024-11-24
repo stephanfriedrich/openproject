@@ -48,7 +48,7 @@ RSpec.shared_examples_for "adapter rename_file_command: successful file renaming
     expect(result).to be_success
 
     response = result.value!
-    expect(response).to be_a(Storages::StorageFile)
+    expect(response).to be_a(Storages::Adapters::Results::StorageFile)
     expect(response.id).to eq(file_id)
     expect(response.name).to eq(name)
   end

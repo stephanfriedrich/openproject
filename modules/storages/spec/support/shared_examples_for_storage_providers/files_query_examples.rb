@@ -28,35 +28,34 @@
 # See COPYRIGHT and LICENSE files for more details.
 #++
 
-RSpec.shared_examples_for "adapter create_folder_command: basic command setup" do
-  it "is registered as commands.create_folder" do
-    expect(Storages::Adapters::Registry.resolve("#{storage}.commands.create_folder")).to eq(described_class)
+RSpec.shared_examples_for "adapter files_query: basic query setup" do
+  it "is registered as queries.files" do
+    expect(Storages::Adapters::Registry.resolve("#{storage}.queries.files")).to eq(described_class)
   end
 
   it "responds to #call with correct parameters" do
     expect(described_class).to respond_to(:call)
 
     method = described_class.method(:call)
-    expect(method.parameters).to contain_exactly(%i[keyreq storage], %i[keyreq auth_strategy], %i[keyreq input_data])
+    expect(method.parameters).to contain_exactly(%i[keyreq storage],
+                                                 %i[keyreq auth_strategy],
+                                                 %i[keyreq input_data])
   end
 end
 
-RSpec.shared_examples_for "adapter create_folder_command: successful folder creation" do
-  it "creates a folder" do
+RSpec.shared_examples_for "adapter files_query: successful files response" do
+  it "returns a file info object" do
     result = described_class.call(storage:, auth_strategy:, input_data:)
 
     expect(result).to be_success
 
     response = result.value!
-    expect(response).to be_a(Storages::Adapters::Results::StorageFile)
-    expect(response.name).to eq(folder_name)
-    expect(response.location).to eq(path)
-  ensure
-    delete_created_folder(response)
+    expect(response).to be_a(Storages::StorageFiles)
+    expect(response).to eq(files_result)
   end
 end
 
-RSpec.shared_examples_for "adapter create_folder_command: parent not found" do
+RSpec.shared_examples_for "adapter files_query: not found" do
   it "returns a failure" do
     result = described_class.call(storage:, auth_strategy:, input_data:)
 
@@ -68,14 +67,14 @@ RSpec.shared_examples_for "adapter create_folder_command: parent not found" do
   end
 end
 
-RSpec.shared_examples_for "adapter create_folder_command: folder already exists" do
+RSpec.shared_examples_for "adapter files_query: error" do
   it "returns a failure" do
     result = described_class.call(storage:, auth_strategy:, input_data:)
 
     expect(result).to be_failure
 
     error = result.failure
-    expect(error.code).to eq(:already_exists)
+    expect(error.code).to eq(:error)
     expect(error.source).to eq(described_class)
   end
 end

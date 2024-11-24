@@ -33,8 +33,6 @@ module Storages
     include AdapterInjector["one_drive.commands.create_folder", "one_drive.commands.rename_file",
                             "one_drive.commands.set_permissions", "one_drive.queries.files", "one_drive.authentication.userless"]
 
-    using Peripherals::ServiceResultRefinements
-
     OP_PERMISSIONS = %i[read_files write_files create_files delete_files share_files].freeze
 
     def self.i18n_key = "OneDriveSyncService"
