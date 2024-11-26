@@ -30,25 +30,29 @@
 
 module Storages
   module Adapters
-    module Providers
-      module OneDrive
-        OneDriveRegistry = Dry::Container::Namespace.new("one_drive") do
-          namespace(:authentication) do
-            register(:userless, ->(use_cache = true) { Input::Strategy.build(key: :oauth_client_credentials, use_cache:) })
-            register(:user_bound, ->(user) { Input::Strategy.build(key: :oauth_user_token, user:) })
+    module Results
+      class StorageFileInfoContract < Dry::Validation::Contract
+        params do
+          before(:value_coercer) do |input|
+            input.to_h.compact
           end
 
-          namespace(:commands) do
-            register(:create_folder, Commands::CreateFolderCommand)
-            register(:rename_file, Commands::RenameFileCommand)
-            register(:set_permissions, Commands::SetPermissionsCommand)
-          end
-
-          namespace(:queries) do
-            register(:file_info, Queries::FileInfoQuery)
-            register(:files, Queries::FilesQuery)
-            register(:upload_link, Queries::UploadLinkQuery)
-          end
+          required(:status).filled(:string)
+          required(:status_code).filled(:integer)
+          required(:id).filled(:string)
+          optional(:name).filled(:string)
+          optional(:size).filled(:integer, gteq?: 0)
+          optional(:mime_type).filled(:string)
+          optional(:created_at).filled(:time)
+          optional(:last_modified_at).filled(:time)
+          optional(:last_modified_by_name).filled(:string)
+          optional(:last_modified_by_id).filled(:string)
+          optional(:created_by_name).filled(:string)
+          optional(:last_modified_by_name).filled(:string)
+          optional(:location).filled(:string, format?: /^\//)
+          optional(:permissions).value(:array)
+          optional(:owner_name).filled(:string)
+          optional(:owner_id).filled(:string)
         end
       end
     end

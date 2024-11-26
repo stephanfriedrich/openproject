@@ -58,6 +58,27 @@ module Storages
                                      permissions: %i[readable writeable])
           end
 
+          # rubocop:disable Metrics/AbcSize
+          def transform_file_info(json)
+            # Need to handle the errors
+            Results::StorageFileInfo.build(
+              status: json[:status],
+              status_code: json[:status_code],
+              id: json[:id],
+              name: json[:name],
+              mime_type: mime_type(json),
+              size: json[:size],
+              owner_name: json.dig(:createdBy, :user, :displayName),
+              owner_id: json.dig(:createdBy, :user, :id),
+              location: UrlBuilder.path(extract_location(json[:parentReference], json[:name])),
+              last_modified_at: json.dig(:fileSystemInfo, :lastModifiedDateTime),
+              created_at: json.dig(:fileSystemInfo, :createdDateTime),
+              last_modified_by_name: json.dig(:lastModifiedBy, :user, :displayName),
+              last_modified_by_id: json.dig(:lastModifiedBy, :user, :id)
+            ).value_or(nil)
+          end
+          # rubocop:enable Metrics/AbcSize
+
           private
 
           def mime_type(json)

@@ -30,25 +30,13 @@
 
 module Storages
   module Adapters
-    module Providers
-      module OneDrive
-        OneDriveRegistry = Dry::Container::Namespace.new("one_drive") do
-          namespace(:authentication) do
-            register(:userless, ->(use_cache = true) { Input::Strategy.build(key: :oauth_client_credentials, use_cache:) })
-            register(:user_bound, ->(user) { Input::Strategy.build(key: :oauth_user_token, user:) })
-          end
+    module Input
+      # FIXME: Should FileID become a Location?
+      FileInfo = Data.define(:file_id) do
+        private_class_method :new
 
-          namespace(:commands) do
-            register(:create_folder, Commands::CreateFolderCommand)
-            register(:rename_file, Commands::RenameFileCommand)
-            register(:set_permissions, Commands::SetPermissionsCommand)
-          end
-
-          namespace(:queries) do
-            register(:file_info, Queries::FileInfoQuery)
-            register(:files, Queries::FilesQuery)
-            register(:upload_link, Queries::UploadLinkQuery)
-          end
+        def self.build(file_id:, contract: FileInfoContract.new)
+          contract.call(file_id:).to_monad.fmap { |it| new(**it.to_h) }
         end
       end
     end
