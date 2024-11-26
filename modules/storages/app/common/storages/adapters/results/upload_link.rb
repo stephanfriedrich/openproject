@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -30,12 +28,17 @@
 
 module Storages
   module Adapters
-    module AdapterTypes
-      include Dry.Types()
+    module Results
+      UploadLink = Data.define(:destination, :method) do
+        private_class_method :new
 
-      Location = AdapterTypes.Constructor(Peripherals::ParentFolder)
-      StorageFileInstance = AdapterTypes.Instance(Results::StorageFile)
-      HTTPVerb = AdapterTypes::Nominal::Symbol.constrained(included_in: %i(post put))
+        def self.build(destination:, method:, contract: UploadLinkContract.new)
+          contract.call(destination:, method:).to_monad.fmap do |it|
+            params = it.to_h
+            new(URI(params[:destination]), params[:method])
+          end
+        end
+      end
     end
   end
 end

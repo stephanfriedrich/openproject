@@ -30,12 +30,13 @@
 
 module Storages
   module Adapters
-    module AdapterTypes
-      include Dry.Types()
-
-      Location = AdapterTypes.Constructor(Peripherals::ParentFolder)
-      StorageFileInstance = AdapterTypes.Instance(Results::StorageFile)
-      HTTPVerb = AdapterTypes::Nominal::Symbol.constrained(included_in: %i(post put))
+    module Input
+      class UploadDataContract < Dry::Validation::Contract
+        params do
+          required(:folder_id).filled(:string)
+          required(:file_name).filled(:string)
+        end
+      end
     end
   end
 end

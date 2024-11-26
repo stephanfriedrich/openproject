@@ -129,9 +129,9 @@ module Storages
     def add_user_to_permission_list(permissions, identity, project)
       op_user_permissions = identity.user.all_permissions_for(project)
 
-      if op_user_permissions.includes?(:write_files)
+      if op_user_permissions.include?(:write_files)
         permissions << { user_id: identity.origin_user_id, permissions: [:write_files] }
-      elsif op_user_permissions.includes?(:read_files)
+      elsif op_user_permissions.include?(:read_files)
         permissions << { user_id: identity.origin_user_id, permissions: [:read_files] }
       end
     end
@@ -161,7 +161,7 @@ module Storages
 
       folder_info = @commands[:create_folder].call(auth_strategy:, input_data:).value_or do |error|
         log_adapter_error(error, folder_name:)
-        return add_error(:create_folder, error, options: { folder_name:, parent_location: root_folder })
+        return add_error(:create_folder, error, options: { folder_name:, parent_location: "/" })
       end
 
       last_project_folder = ::Storages::LastProjectFolder.find_by(project_storage_id:, mode: :automatic)

@@ -28,9 +28,10 @@
 # See COPYRIGHT and LICENSE files for more details.
 #++
 
-RSpec.shared_examples_for "adapter create_folder_command: basic command setup" do
-  it "is registered as commands.create_folder" do
-    expect(Storages::Adapters::Registry.resolve("#{storage}.commands.create_folder")).to eq(described_class)
+RSpec.shared_examples_for "adapter upload_link_query: basic query setup" do
+  it "is registered as queries.upload_link" do
+    expect(Storages::Adapters::Registry
+             .resolve("#{storage}.queries.upload_link")).to eq(described_class)
   end
 
   it "responds to #call with correct parameters" do
@@ -41,22 +42,21 @@ RSpec.shared_examples_for "adapter create_folder_command: basic command setup" d
   end
 end
 
-RSpec.shared_examples_for "adapter create_folder_command: successful folder creation" do
-  it "creates a folder" do
+RSpec.shared_examples_for "adapter upload_link_query: successful upload link response" do
+  it "returns an upload link" do
     result = described_class.call(storage:, auth_strategy:, input_data:)
 
     expect(result).to be_success
 
     response = result.value!
-    expect(response).to be_a(Storages::Adapters::Results::StorageFile)
-    expect(response.name).to eq(folder_name)
-    expect(response.location).to eq(path)
-  ensure
-    delete_created_folder(response)
+    expect(response).to be_a(Storages::Adapters::Results::UploadLink)
+    expect(response.destination).to be_a(URI)
+    expect(response.destination.to_s).to eq(upload_url)
+    expect(response.method).to eq(upload_method)
   end
 end
 
-RSpec.shared_examples_for "adapter create_folder_command: parent not found" do
+RSpec.shared_examples_for "adapter upload_link_query: not found" do
   it "returns a failure" do
     result = described_class.call(storage:, auth_strategy:, input_data:)
 
@@ -68,14 +68,14 @@ RSpec.shared_examples_for "adapter create_folder_command: parent not found" do
   end
 end
 
-RSpec.shared_examples_for "adapter create_folder_command: folder already exists" do
+RSpec.shared_examples_for "adapter upload_link_query: error" do
   it "returns a failure" do
     result = described_class.call(storage:, auth_strategy:, input_data:)
 
     expect(result).to be_failure
 
     error = result.failure
-    expect(error.code).to eq(:conflict)
+    expect(error.code).to eq(:error)
     expect(error.source).to eq(described_class)
   end
 end

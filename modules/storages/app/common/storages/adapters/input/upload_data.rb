@@ -30,12 +30,14 @@
 
 module Storages
   module Adapters
-    module AdapterTypes
-      include Dry.Types()
+    module Input
+      UploadData = Data.define(:folder_id, :file_name) do
+        private_class_method :new
 
-      Location = AdapterTypes.Constructor(Peripherals::ParentFolder)
-      StorageFileInstance = AdapterTypes.Instance(Results::StorageFile)
-      HTTPVerb = AdapterTypes::Nominal::Symbol.constrained(included_in: %i(post put))
+        def self.build(folder_id:, file_name:, contract: UploadDataContract.new)
+          contract.call(folder_id:, file_name:).to_monad.fmap { |result| new(**result.to_h) }
+        end
+      end
     end
   end
 end

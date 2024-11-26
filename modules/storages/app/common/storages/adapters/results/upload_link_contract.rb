@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -30,12 +28,13 @@
 
 module Storages
   module Adapters
-    module AdapterTypes
-      include Dry.Types()
-
-      Location = AdapterTypes.Constructor(Peripherals::ParentFolder)
-      StorageFileInstance = AdapterTypes.Instance(Results::StorageFile)
-      HTTPVerb = AdapterTypes::Nominal::Symbol.constrained(included_in: %i(post put))
+    module Results
+      class UploadLinkContract < Dry::Validation::Contract
+        params do
+          required(:destination).filled { uri?(:https) }
+          required(:method).filled(AdapterTypes::HTTPVerb)
+        end
+      end
     end
   end
 end
