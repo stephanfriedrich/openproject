@@ -31,6 +31,7 @@
 module Storages
   module Adapters
     module Results
+      # FIXME: UploadDestination or something similar might be more suitable here.
       UploadLink = Data.define(:destination, :method) do
         private_class_method :new
 

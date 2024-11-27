@@ -31,10 +31,27 @@
 module Storages
   module Adapters
     module Input
-      class FilePathToIdMapContract < Dry::Validation::Contract
-        params do
-          required(:folder).filter(:filled?, :str?).value(AdapterTypes::Location)
-          required(:depth).filled { (int? & gteq?(0)) | eql?(Float::INFINITY) }
+      RSpec.describe UploadData do
+        subject(:input) { described_class }
+
+        describe ".new" do
+          it "discourages direct instantiation" do
+            expect { described_class.new(folder_id: "file_id", file_name: "name") }
+              .to raise_error(NoMethodError, /private method `new'/)
+          end
+        end
+
+        describe ".build" do
+          it "creates a success result for valid input data" do
+            expect(input.build(folder_id: "ABDCE", file_name: "DeathStar")).to be_success
+          end
+
+          it "creates a failure result for invalid input data" do
+            expect(input.build(folder_id: "/", file_name: 1)).to be_failure
+            expect(input.build(folder_id: "/", file_name: "")).to be_failure
+            expect(input.build(folder_id: 1, file_name: "DeathStar")).to be_failure
+            expect(input.build(folder_id: "", file_name: "DeathStar")).to be_failure
+          end
         end
       end
     end

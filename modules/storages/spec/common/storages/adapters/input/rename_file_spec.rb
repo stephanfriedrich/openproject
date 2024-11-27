@@ -31,10 +31,33 @@
 module Storages
   module Adapters
     module Input
-      class FilePathToIdMapContract < Dry::Validation::Contract
-        params do
-          required(:folder).filter(:filled?, :str?).value(AdapterTypes::Location)
-          required(:depth).filled { (int? & gteq?(0)) | eql?(Float::INFINITY) }
+      RSpec.describe RenameFile do
+        subject(:input) { described_class }
+
+        describe ".new" do
+          it "discourages direct instantiation" do
+            expect { described_class.new(location: "file_id", new_name: "Bob") }
+              .to raise_error(NoMethodError, /private method `new'/)
+          end
+        end
+
+        describe ".build" do
+          it "creates a success result for valid input data" do
+            expect(input.build(location: "/", new_name: "DeathStar")).to be_success
+          end
+
+          it "coerces the parent folder into a ParentFolder object" do
+            result = input.build(location: "/", new_name: "DeathStar").value!
+
+            expect(result.location).to be_a(Peripherals::ParentFolder)
+          end
+
+          it "creates a failure result for invalid input data" do
+            expect(input.build(location: "/", new_name: 1)).to be_failure
+            expect(input.build(location: "/", new_name: "")).to be_failure
+            expect(input.build(location: 1, new_name: "DeathStar")).to be_failure
+            expect(input.build(location: "", new_name: "DeathStar")).to be_failure
+          end
         end
       end
     end

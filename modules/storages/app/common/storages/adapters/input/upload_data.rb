@@ -31,6 +31,7 @@
 module Storages
   module Adapters
     module Input
+      # FIXME: This breaks convention. Should be UploadLink
       UploadData = Data.define(:folder_id, :file_name) do
         private_class_method :new
 

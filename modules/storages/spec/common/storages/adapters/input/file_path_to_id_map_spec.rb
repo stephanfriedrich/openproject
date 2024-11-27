@@ -31,10 +31,39 @@
 module Storages
   module Adapters
     module Input
-      class FilePathToIdMapContract < Dry::Validation::Contract
-        params do
-          required(:folder).filter(:filled?, :str?).value(AdapterTypes::Location)
-          required(:depth).filled { (int? & gteq?(0)) | eql?(Float::INFINITY) }
+      RSpec.describe FilePathToIdMap do
+        subject(:input) { described_class }
+
+        describe ".new" do
+          it "discourages direct instantiation" do
+            expect { described_class.new(folder: "file_id", depth: 1) }
+              .to raise_error(NoMethodError, /private method `new'/)
+          end
+        end
+
+        describe ".build" do
+          it "creates a success result for valid input data" do
+            expect(input.build(folder: "/")).to be_success
+          end
+
+          it "coerces the parent folder into a ParentFolder object" do
+            result = input.build(folder: "/", depth: 1).value!
+
+            expect(result.folder).to be_a(Peripherals::ParentFolder)
+          end
+
+          it "defaults to Float::INFINITY for depth" do
+            result = input.build(folder: "/").value!
+
+            expect(result.depth).to eq(Float::INFINITY)
+          end
+
+          it "creates a failure result for invalid input data" do
+            expect(input.build(folder: "/", depth: 1.5)).to be_failure
+            expect(input.build(folder: "/", depth: -1)).to be_failure
+            expect(input.build(folder: 1, depth: 1)).to be_failure
+            expect(input.build(folder: "", depth: 1)).to be_failure
+          end
         end
       end
     end
