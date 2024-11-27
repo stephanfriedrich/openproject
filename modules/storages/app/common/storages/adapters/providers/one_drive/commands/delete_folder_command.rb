@@ -32,24 +32,34 @@ module Storages
   module Adapters
     module Providers
       module OneDrive
-        OneDriveRegistry = Dry::Container::Namespace.new("one_drive") do
-          namespace(:authentication) do
-            register(:userless, ->(use_cache = true) { Input::Strategy.build(key: :oauth_client_credentials, use_cache:) })
-            register(:user_bound, ->(user) { Input::Strategy.build(key: :oauth_user_token, user:) })
-          end
+        module Commands
+          class DeleteFolderCommand < Base
+            def call(auth_strategy:, input_data:)
+              Authentication[auth_strategy].call(storage: @storage) do |http|
+                handle_response http.delete(
+                  UrlBuilder.url(base_uri, "items", input_data.location)
+                )
+              end
+            end
 
-          namespace(:commands) do
-            register(:create_folder, Commands::CreateFolderCommand)
-            register(:delete_folder, Commands::DeleteFolderCommand)
-            register(:rename_file, Commands::RenameFileCommand)
-            register(:set_permissions, Commands::SetPermissionsCommand)
-          end
+            private
 
-          namespace(:queries) do
-            register(:file_info, Queries::FileInfoQuery)
-            register(:file_path_to_id_map, Queries::FilePathToIdMapQuery)
-            register(:files, Queries::FilesQuery)
-            register(:upload_link, Queries::UploadLinkQuery)
+            def handle_response(response)
+              error = Results::Error.new(source: self.class, payload: response)
+
+              case response
+              in { status: 200..299 }
+                Success()
+              in { status: 401 }
+                Failure(error.with(code: :unauthorized))
+              in { status: 404 }
+                Failure(error.with(code: :not_found))
+              in { status: 409 }
+                Failure(error.with(code: :conflict))
+              else
+                Failure(error.with(code: :error))
+              end
+            end
           end
         end
       end

@@ -103,17 +103,16 @@ module Storages
     def hide_inactive_folders(folder_map)
       info "Hiding folders related to inactive projects"
 
-      inactive_folder_ids(folder_map).each { |item_id| hide_folder(item_id) }
+      inactive_folder_ids(folder_map).each { |item_id| hide_folder(item_id, folder_map) }
     end
 
-    def hide_folder(item_id)
+    def hide_folder(item_id, folder_map)
       info "Hiding folder with ID #{item_id} as it does not belong to any active project"
 
       build_permissions_input_data(item_id, [])
         .either(
           ->(input_data) do
-            @commands[:set_permissions].call(auth_strategy:, input_data:)
-                           .value_or do |error|
+            @commands[:set_permissions].call(auth_strategy:, input_data:).or do |error|
               log_adapter_error(error, item_id:, context: "hide_folder")
               add_error(:hide_inactive_folders, error, options: { path: folder_map[item_id] })
             end
@@ -143,13 +142,14 @@ module Storages
       info "#{current_folder_name} is misnamed. Renaming to #{actual_path}"
       folder_id = project_storage.project_folder_id
 
-      input_data = Adapters::Input::RenameFile.build(location: folder_id, new_name: actual_path).value_or { return Failure(_1) }
-      @commands[:rename_file].call(auth_strategy:, input_data:).value_or do |error|
-        log_adapter_error(error, folder_id:, folder_name: actual_path)
-        add_error(
-          :rename_project_folder, error,
-          options: { current_path: current_folder_name, project_folder_name: actual_path, project_folder_id: folder_id }
-        )
+      Adapters::Input::RenameFile.build(location: folder_id, new_name: actual_path).bind do |input_data|
+        @commands[:rename_file].call(auth_strategy:, input_data:).or do |error|
+          log_adapter_error(error, folder_id:, folder_name: actual_path)
+          add_error(
+            :rename_project_folder, error,
+            options: { current_path: current_folder_name, project_folder_name: actual_path, project_folder_id: folder_id }
+          )
+        end
       end
     end
 
@@ -164,7 +164,7 @@ module Storages
         return add_error(:create_folder, error, options: { folder_name:, parent_location: "/" })
       end
 
-      last_project_folder = ::Storages::LastProjectFolder.find_by(project_storage_id:, mode: :automatic)
+      last_project_folder = LastProjectFolder.find_by(project_storage_id:, mode: :automatic)
 
       audit_last_project_folder(last_project_folder, folder_info.id)
     end
@@ -233,7 +233,7 @@ module Storages
     end
 
     def build_permissions_input_data(file_id, user_permissions)
-      Peripherals::StorageInteraction::Inputs::SetPermissions.build(file_id:, user_permissions:)
+      Adapters::Input::SetPermissions.build(file_id:, user_permissions:)
     end
 
     # @param attribute [Symbol] attribute to which the error will be tied to

@@ -34,10 +34,6 @@ module Storages
       module OneDrive
         module Queries
           class UploadLinkQuery < Base
-            def self.call(storage:, auth_strategy:, input_data:)
-              new(storage).call(auth_strategy:, input_data:)
-            end
-
             def call(auth_strategy:, input_data:)
               with_tagged_logger do
                 Authentication[auth_strategy].call(storage: @storage) do |http|

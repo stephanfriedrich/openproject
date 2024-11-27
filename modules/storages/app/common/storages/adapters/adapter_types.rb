@@ -33,6 +33,7 @@ module Storages
     module AdapterTypes
       include Dry.Types()
 
+      # We need to move the definition of ParentFolder to mean something like Folder
       Location = AdapterTypes.Constructor(Peripherals::ParentFolder)
       StorageFileInstance = AdapterTypes.Instance(Results::StorageFile)
       HTTPVerb = AdapterTypes::Nominal::Symbol.constrained(included_in: %i(post put))

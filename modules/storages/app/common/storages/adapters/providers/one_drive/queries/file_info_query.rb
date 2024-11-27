@@ -36,10 +36,6 @@ module Storages
           class FileInfoQuery < Base
             FIELDS = %w[id name fileSystemInfo file folder size createdBy lastModifiedBy parentReference].freeze
 
-            def self.call(storage:, auth_strategy:, input_data:)
-              new(storage).call(auth_strategy:, input_data:)
-            end
-
             def call(auth_strategy:, input_data:)
               base_query = Authentication[auth_strategy].call(storage: @storage) do |http|
                 drive_item_query.call(http:, drive_item_id: input_data.file_id, fields: FIELDS)

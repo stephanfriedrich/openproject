@@ -52,16 +52,9 @@ module Storages
 
             private_constant :PermissionFilter, :PermissionUpdateData
 
-            # Instantiates the command and executes it.
-            #
-            # @param storage [Storage] The storage to interact with.
             # @param auth_strategy [AuthenticationStrategy] The authentication strategy to use.
             # @param input_data [Inputs::SetPermissions] The data needed for setting permissions, containing the file id
             # and the permissions for an array of users.
-            def self.call(storage:, auth_strategy:, input_data:)
-              new(storage).call(auth_strategy:, input_data:)
-            end
-
             def call(auth_strategy:, input_data:)
               with_tagged_logger do
                 Authentication[auth_strategy].call(storage: @storage) do |http|

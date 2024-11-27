@@ -36,10 +36,6 @@ module Storages
           class FilesQuery < Base
             FIELDS = "?$select=id,name,size,webUrl,lastModifiedBy,createdBy,fileSystemInfo,file,folder,parentReference"
 
-            def self.call(storage:, auth_strategy:, input_data:)
-              new(storage).call(auth_strategy:, input_data:)
-            end
-
             def initialize(*)
               super
               @transformer = StorageFileTransformer.new

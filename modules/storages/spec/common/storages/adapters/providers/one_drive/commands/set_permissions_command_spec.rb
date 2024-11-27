@@ -143,21 +143,14 @@ module Storages
 
             private
 
-            # remove once all commands are moved
-            def setup_strat
-              Peripherals::StorageInteraction::AuthenticationStrategies::OAuthClientCredentials
-                .strategy
-                .with_cache(false)
-            end
-
             def permission_input_data(file_id, user_permissions)
               Input::SetPermissions.build(file_id:, user_permissions:).value!
             end
 
             def clean_up(file_id)
-              Peripherals::Registry
-                .resolve("one_drive.commands.delete_folder")
-                .call(storage:, auth_strategy: setup_strat, location: file_id)
+              Input::DeleteFolder.build(location: file_id).bind do |input_data|
+                Registry.resolve("one_drive.commands.delete_folder").call(storage:, auth_strategy:, input_data:)
+              end
             end
 
             def permission_list_from_role(role)

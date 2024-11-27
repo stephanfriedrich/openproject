@@ -31,9 +31,6 @@
 module Storages
   module Adapters
     class Authentication
-      include Dry::Monads[:result]
-
-      # resolves to a certain class of [AuthenticationStrategies] and instantiates it
       # @param strategy [Input::Strategy]
       # @return [AuthenticationStrategy]
       def self.[](strategy)

@@ -39,9 +39,7 @@ module Storages
           RSpec.describe CreateFolderCommand, :webmock do
             let(:storage) { create(:sharepoint_dev_drive_storage) }
             let(:auth_strategy) { Registry.resolve("one_drive.authentication.userless").call }
-            let(:input_data) do
-              Input::CreateFolder.build(folder_name:, parent_location:).value!
-            end
+            let(:input_data) { Input::CreateFolder.build(folder_name:, parent_location:).value! }
 
             it_behaves_like "adapter create_folder_command: basic command setup"
 
@@ -78,10 +76,9 @@ module Storages
             private
 
             def delete_created_folder(folder)
-              auth_strategy = Peripherals::StorageInteraction::AuthenticationStrategies::OAuthClientCredentials.strategy
-
-              Peripherals::Registry.resolve("one_drive.commands.delete_folder")
-                                   .call(storage:, auth_strategy:, location: folder.id)
+              Input::DeleteFolder.build(location: folder.id).bind do |input_data|
+                Registry.resolve("one_drive.commands.delete_folder").call(storage:, auth_strategy:, input_data:)
+              end
             end
           end
         end

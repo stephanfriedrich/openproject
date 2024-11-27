@@ -39,10 +39,6 @@ module Storages
             CHILDREN_FIELDS = %w[id name file folder parentReference].freeze
             FOLDER_FIELDS = %w[id name parentReference].freeze
 
-            def self.call(storage:, auth_strategy:, input_data:)
-              new(storage).call(auth_strategy:, input_data:)
-            end
-
             def initialize(*)
               super
               @drive_item_query = DriveItemQuery.new(@storage)

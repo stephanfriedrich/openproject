@@ -30,27 +30,12 @@
 
 module Storages
   module Adapters
-    module Providers
-      module OneDrive
-        OneDriveRegistry = Dry::Container::Namespace.new("one_drive") do
-          namespace(:authentication) do
-            register(:userless, ->(use_cache = true) { Input::Strategy.build(key: :oauth_client_credentials, use_cache:) })
-            register(:user_bound, ->(user) { Input::Strategy.build(key: :oauth_user_token, user:) })
-          end
+    module Input
+      DeleteFolder = Data.define(:location) do
+        private_class_method :new
 
-          namespace(:commands) do
-            register(:create_folder, Commands::CreateFolderCommand)
-            register(:delete_folder, Commands::DeleteFolderCommand)
-            register(:rename_file, Commands::RenameFileCommand)
-            register(:set_permissions, Commands::SetPermissionsCommand)
-          end
-
-          namespace(:queries) do
-            register(:file_info, Queries::FileInfoQuery)
-            register(:file_path_to_id_map, Queries::FilePathToIdMapQuery)
-            register(:files, Queries::FilesQuery)
-            register(:upload_link, Queries::UploadLinkQuery)
-          end
+        def self.build(location:, contract: DeleteFolderContract.new)
+          contract.call(location:).to_monad.fmap { |it| new(**it.to_h) }
         end
       end
     end

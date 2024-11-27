@@ -32,7 +32,7 @@ module Storages
   module Adapters
     module Results
       Error = ::Data.define(:code, :payload, :source) do
-        def initialize(code: nil, source: nil, payload: nil)
+        def initialize(source:, code: nil, payload: nil)
           super
         end
       end

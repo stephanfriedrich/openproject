@@ -34,7 +34,11 @@ module Storages
       module OneDrive
         class Base
           include TaggedLogging
-          include Dry::Monads[:result]
+          include Dry::Monads::Result(Results::Error)
+
+          def self.call(storage:, auth_strategy:, input_data:)
+            new(storage).call(auth_strategy:, input_data:)
+          end
 
           def initialize(storage)
             @storage = storage

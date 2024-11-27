@@ -30,27 +30,11 @@
 
 module Storages
   module Adapters
-    module Providers
-      module OneDrive
-        OneDriveRegistry = Dry::Container::Namespace.new("one_drive") do
-          namespace(:authentication) do
-            register(:userless, ->(use_cache = true) { Input::Strategy.build(key: :oauth_client_credentials, use_cache:) })
-            register(:user_bound, ->(user) { Input::Strategy.build(key: :oauth_user_token, user:) })
-          end
-
-          namespace(:commands) do
-            register(:create_folder, Commands::CreateFolderCommand)
-            register(:delete_folder, Commands::DeleteFolderCommand)
-            register(:rename_file, Commands::RenameFileCommand)
-            register(:set_permissions, Commands::SetPermissionsCommand)
-          end
-
-          namespace(:queries) do
-            register(:file_info, Queries::FileInfoQuery)
-            register(:file_path_to_id_map, Queries::FilePathToIdMapQuery)
-            register(:files, Queries::FilesQuery)
-            register(:upload_link, Queries::UploadLinkQuery)
-          end
+    module Input
+      class DeleteFolderContract < Dry::Validation::Contract
+        params do
+          # FIXME: Should this be a Location?
+          required(:location).filled(:string)
         end
       end
     end
