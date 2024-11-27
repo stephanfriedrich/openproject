@@ -137,16 +137,6 @@ module Storages
       (health_notifications_enabled.nil? && automatic_management_enabled?) || health_notifications_enabled?
     end
 
-    def automatically_managed?
-      ActiveSupport::Deprecation.new.warn(
-        "`#automatically_managed?` is deprecated. Use `#automatic_management_enabled?` instead. " \
-        "NOTE: The new method name better reflects the actual behavior of the storage. " \
-        "It's not the storage that is automatically managed, rather the Project (Storage) Folder is. " \
-        "A storage only has this feature enabled or disabled."
-      )
-      super
-    end
-
     def automatic_management_enabled?
       !!automatically_managed
     end
