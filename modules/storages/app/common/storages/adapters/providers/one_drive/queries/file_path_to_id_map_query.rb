@@ -34,6 +34,7 @@ module Storages
       module OneDrive
         module Queries
           class FilePathToIdMapQuery < Base
+            # FIXME: Find a way to remove this
             Util = Peripherals::StorageInteraction::OneDrive::Util
 
             CHILDREN_FIELDS = %w[id name file folder parentReference].freeze

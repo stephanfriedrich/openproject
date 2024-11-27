@@ -1,5 +1,3 @@
-# frozen_string_literal: true
-
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -31,36 +29,17 @@
 module Storages
   module Adapters
     module Providers
-      module OneDrive
+      module Nextcloud
         class Base
           include TaggedLogging
           include Dry::Monads::Result(Results::Error)
 
           def self.call(storage:, auth_strategy:, input_data:)
-            new(storage).call(auth_strategy:, input_data:)
+            new(storage).call(auth_strategy: auth_strategy, input_data: input_data)
           end
 
           def initialize(storage)
             @storage = storage
-          end
-
-          private
-
-          # @param error [Results::Error]
-          def log_storage_error(error, context = {})
-            data = case error.payload
-                   in { status: Integer }
-                     { status: error.payload&.status, body: error.payload&.body.to_s }
-                   else
-                     error.payload.to_s
-                   end
-
-            error_message = context.merge({ error_code: error.code, data: })
-            error error_message
-          end
-
-          def base_uri
-            URI.parse(UrlBuilder.url(@storage.uri, "/v1.0/drives", @storage.drive_id))
           end
         end
       end
