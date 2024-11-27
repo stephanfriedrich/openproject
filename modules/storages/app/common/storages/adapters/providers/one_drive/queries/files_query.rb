@@ -49,7 +49,7 @@ module Storages
               with_tagged_logger do
                 info "Getting data on all files under folder '#{input_data.folder}'"
                 Authentication[auth_strategy].call(storage: @storage) do |http|
-                  handle_response(http.get(children_url_for(input_data.folder) + FIELDS)).fmap do |response|
+                  handle_response(http.get(children_url_for(input_data.folder) + FIELDS)).bind do |response|
                     files = response.fetch(:value, [])
                     return empty_response(http, input_data.folder) if files.empty?
 
@@ -84,20 +84,21 @@ module Storages
               files = json_files.map { |json| @transformer.transform(json).value_or(nil) }
 
               parent_reference = json_files.first[:parentReference]
-              StorageFiles.new(files.compact, parent(parent_reference), forge_ancestors(parent_reference))
+              Results::StorageFileCollection
+                .build(files: files.compact, parent: parent(parent_reference), ancestors: forge_ancestors(parent_reference))
             end
 
             def empty_response(http, folder)
-              handle_response(http.get(location_url_for(folder) + FIELDS)).fmap do |response|
+              handle_response(http.get(location_url_for(folder) + FIELDS)).bind do |response|
                 empty_storage_files(folder.path, response[:id])
               end
             end
 
             def empty_storage_files(path, parent_id)
-              StorageFiles.new(
-                [],
-                @transformer.bare_transform(id: parent_id, location: path),
-                forge_ancestors(path:)
+              Results::StorageFileCollection.build(
+                files: [],
+                parent: @transformer.bare_transform(id: parent_id, location: path),
+                ancestors: forge_ancestors(path:)
               )
             end
 

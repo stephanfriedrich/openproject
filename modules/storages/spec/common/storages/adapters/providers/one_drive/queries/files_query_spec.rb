@@ -47,8 +47,8 @@ module Storages
             context "with parent folder being root", vcr: "one_drive/files_query_root" do
               let(:folder) { "/" }
               let(:files_result) do
-                StorageFiles.new(
-                  [
+                Results::StorageFileCollection.build(
+                  files: [
                     Results::StorageFile.new(id: "01AZJL5PMAXGDWAAKMEBALX4Q6GSN5BSBR",
                                              name: "Folder",
                                              size: 260500,
@@ -80,12 +80,12 @@ module Storages
                                              location: "/Permissions%20Folder",
                                              permissions: %i[readable writeable])
                   ],
-                  Results::StorageFile.new(id: "01AZJL5PN6Y2GOVW7725BZO354PWSELRRZ",
-                                           name: "Root",
-                                           location: "/",
-                                           permissions: %i[readable writeable]),
-                  []
-                )
+                  parent: Results::StorageFile.new(id: "01AZJL5PN6Y2GOVW7725BZO354PWSELRRZ",
+                                                   name: "Root",
+                                                   location: "/",
+                                                   permissions: %i[readable writeable]),
+                  ancestors: []
+                ).value!
               end
 
               it_behaves_like "adapter files_query: successful files response"
@@ -94,8 +94,8 @@ module Storages
             context "with a given parent folder", vcr: "one_drive/files_query_parent_folder" do
               let(:folder) { "/Folder/Subfolder" }
               let(:files_result) do
-                StorageFiles.new(
-                  [
+                Results::StorageFileCollection.build(
+                  files: [
                     Results::StorageFile.new(id: "01AZJL5PNCQCEBFI3N7JGZSX5AOX32Z3LA",
                                              name: "NextcloudHub.md",
                                              size: 1095,
@@ -117,11 +117,11 @@ module Storages
                                              location: "/Folder/Subfolder/test.txt",
                                              permissions: %i[readable writeable])
                   ],
-                  Results::StorageFile.new(id: "01AZJL5PPWP5UOATNRJJBYJG5TACDHEUAG",
-                                           name: "Subfolder",
-                                           location: "/Folder/Subfolder",
-                                           permissions: %i[readable writeable]),
-                  [
+                  parent: Results::StorageFile.new(id: "01AZJL5PPWP5UOATNRJJBYJG5TACDHEUAG",
+                                                   name: "Subfolder",
+                                                   location: "/Folder/Subfolder",
+                                                   permissions: %i[readable writeable]),
+                  ancestors: [
                     Results::StorageFile.new(id: "a1d45ff742d2175c095f0a7173f93fc3fc23664a953ceae6778fe15398818c2d",
                                              name: "Root",
                                              location: "/",
@@ -130,7 +130,7 @@ module Storages
                                              name: "Folder",
                                              location: "/Folder")
                   ]
-                )
+                ).value!
               end
 
               it_behaves_like "adapter files_query: successful files response"
@@ -139,13 +139,13 @@ module Storages
             context "with parent folder being empty", vcr: "one_drive/files_query_empty_folder" do
               let(:folder) { "/Folder with spaces/very empty folder" }
               let(:files_result) do
-                StorageFiles.new(
-                  [],
-                  Results::StorageFile.new(id: "01AZJL5PMGEIRPHZPHRRH2NM3D734VIR7H",
-                                           name: "very empty folder",
-                                           location: "/Folder%20with%20spaces/very%20empty%20folder",
-                                           permissions: %i[readable writeable]),
-                  [
+                Results::StorageFileCollection.build(
+                  files: [],
+                  parent: Results::StorageFile.new(id: "01AZJL5PMGEIRPHZPHRRH2NM3D734VIR7H",
+                                                   name: "very empty folder",
+                                                   location: "/Folder%20with%20spaces/very%20empty%20folder",
+                                                   permissions: %i[readable writeable]),
+                  ancestors: [
                     Results::StorageFile.new(id: "a1d45ff742d2175c095f0a7173f93fc3fc23664a953ceae6778fe15398818c2d",
                                              name: "Root",
                                              location: "/",
@@ -154,7 +154,7 @@ module Storages
                                              name: "Folder with spaces",
                                              location: "/Folder%20with%20spaces")
                   ]
-                )
+                ).value!
               end
 
               it_behaves_like "adapter files_query: successful files response"
@@ -163,8 +163,8 @@ module Storages
             context "with a path full of umlauts", vcr: "one_drive/files_query_umlauts" do
               let(:folder) { "/Folder/Ümlæûts" }
               let(:files_result) do
-                StorageFiles.new(
-                  [
+                Results::StorageFileCollection.build(
+                  files: [
                     Results::StorageFile.new(
                       id: "01AZJL5PNDURPQGKUSGFCJQJMNNWXKTHSE",
                       name: "Anrüchiges deutsches Dokument.docx",
@@ -178,11 +178,11 @@ module Storages
                       permissions: %i[readable writeable]
                     )
                   ],
-                  Results::StorageFile.new(id: "01AZJL5PNQYF5NM3KWYNA3RJHJIB2XMMMB",
-                                           name: "Ümlæûts",
-                                           location: "/Folder/%C3%9Cml%C3%A6%C3%BBts",
-                                           permissions: %i[readable writeable]),
-                  [
+                  parent: Results::StorageFile.new(id: "01AZJL5PNQYF5NM3KWYNA3RJHJIB2XMMMB",
+                                                   name: "Ümlæûts",
+                                                   location: "/Folder/%C3%9Cml%C3%A6%C3%BBts",
+                                                   permissions: %i[readable writeable]),
+                  ancestors: [
                     Results::StorageFile.new(id: "a1d45ff742d2175c095f0a7173f93fc3fc23664a953ceae6778fe15398818c2d",
                                              name: "Root",
                                              location: "/",
@@ -191,7 +191,7 @@ module Storages
                                              name: "Folder",
                                              location: "/Folder")
                   ]
-                )
+                ).value!
               end
 
               it_behaves_like "adapter files_query: successful files response"

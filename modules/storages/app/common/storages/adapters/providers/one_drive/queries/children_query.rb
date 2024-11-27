@@ -32,23 +32,39 @@ module Storages
   module Adapters
     module Providers
       module OneDrive
-        OneDriveRegistry = Dry::Container::Namespace.new("one_drive") do
-          namespace(:authentication) do
-            register(:userless, ->(use_cache = true) { Input::Strategy.build(key: :oauth_client_credentials, use_cache:) })
-            register(:user_bound, ->(user) { Input::Strategy.build(key: :oauth_user_token, user:) })
-          end
+        module Queries
+          class ChildrenQuery < Base
+            def call(http:, folder:, fields: [])
+              query = fields.empty? ? "" : "?$select=#{fields.join(',')}"
 
-          namespace(:commands) do
-            register(:create_folder, Commands::CreateFolderCommand)
-            register(:rename_file, Commands::RenameFileCommand)
-            register(:set_permissions, Commands::SetPermissionsCommand)
-          end
+              url = UrlBuilder.url(base_uri, uri_path_for(folder))
+              handle_responses(http.get(url + query))
+            end
 
-          namespace(:queries) do
-            register(:file_info, Queries::FileInfoQuery)
-            register(:file_path_to_id_map, Queries::FilePathToIdMapQuery)
-            register(:files, Queries::FilesQuery)
-            register(:upload_link, Queries::UploadLinkQuery)
+            private
+
+            def handle_responses(response)
+              error = Results::Error.new(source: self.class, payload: response)
+
+              case response
+              in { status: 200..299 }
+                Success(response.json(symbolize_keys: true).fetch(:value))
+              in { status: 404 }
+                Failure(error.with(code: :not_found))
+              in { status: 403 }
+                Failure(error.with(code: :forbidden))
+              in { status: 401 }
+                Failure(error.with(code: :unauthorized))
+              else
+                Failure(error.with(code: :error))
+              end
+            end
+
+            def uri_path_for(folder)
+              return "/root/children" if folder.root?
+
+              "/items/#{folder.path}/children"
+            end
           end
         end
       end

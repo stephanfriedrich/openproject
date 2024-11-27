@@ -28,9 +28,10 @@
 # See COPYRIGHT and LICENSE files for more details.
 #++
 
-RSpec.shared_examples_for "adapter files_query: basic query setup" do
-  it "is registered as queries.files" do
-    expect(Storages::Adapters::Registry.resolve("#{storage}.queries.files")).to eq(described_class)
+RSpec.shared_examples_for "adapter file_path_to_id_map_query: basic query setup" do
+  it "is registered as queries.file_path_to_id_map" do
+    expect(Storages::Adapters::Registry
+             .resolve("#{storage}.queries.file_path_to_id_map")).to eq(described_class)
   end
 
   it "responds to #call with correct parameters" do
@@ -43,19 +44,17 @@ RSpec.shared_examples_for "adapter files_query: basic query setup" do
   end
 end
 
-RSpec.shared_examples_for "adapter files_query: successful files response" do
-  it "returns a file info object" do
+RSpec.shared_examples_for "adapter file_path_to_id_map_query: successful query" do
+  it "returns a map of locations to file ids" do
     result = described_class.call(storage:, auth_strategy:, input_data:)
-
     expect(result).to be_success
 
     response = result.value!
-    expect(response).to be_a(Storages::Adapters::Results::StorageFileCollection)
-    expect(response).to eq(files_result)
+    expect(response.transform_values(&:id)).to eq(expected_ids)
   end
 end
 
-RSpec.shared_examples_for "adapter files_query: not found" do
+RSpec.shared_examples_for "adapter file_path_to_id_map_query: not found" do
   it "returns a failure" do
     result = described_class.call(storage:, auth_strategy:, input_data:)
 
@@ -63,18 +62,6 @@ RSpec.shared_examples_for "adapter files_query: not found" do
 
     error = result.failure
     expect(error.code).to eq(:not_found)
-    expect(error.source).to eq(described_class)
-  end
-end
-
-RSpec.shared_examples_for "adapter files_query: error" do
-  it "returns a failure" do
-    result = described_class.call(storage:, auth_strategy:, input_data:)
-
-    expect(result).to be_failure
-
-    error = result.failure
-    expect(error.code).to eq(:error)
-    expect(error.source).to eq(described_class)
+    expect(error.source).to eq(error_source)
   end
 end

@@ -26,16 +26,16 @@ module Storages
           status_code:,
           id:,
           name: nil,
-          last_modified_at: nil,
-          created_at: nil,
-          mime_type: nil,
           size: nil,
+          mime_type: nil,
+          created_at: nil,
+          last_modified_at: nil,
+          last_modified_by_name: nil,
+          location: nil,
+          permissions: nil,
           owner_name: nil,
           owner_id: nil,
-          last_modified_by_name: nil,
-          last_modified_by_id: nil,
-          permissions: nil,
-          location: nil
+          last_modified_by_id: nil
         )
           super
         end

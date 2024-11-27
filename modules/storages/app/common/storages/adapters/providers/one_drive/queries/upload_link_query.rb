@@ -42,8 +42,9 @@ module Storages
               with_tagged_logger do
                 Authentication[auth_strategy].call(storage: @storage) do |http|
                   info "Requesting an upload link on folder #{input_data.folder_id}"
-                  handle_response http.post(url(input_data.folder_id, input_data.file_name),
-                                            json: payload(input_data.file_name))
+                  handle_response(
+                    http.post(url(input_data.folder_id, input_data.file_name), json: payload(input_data.file_name))
+                  )
                 end
               end
             end
