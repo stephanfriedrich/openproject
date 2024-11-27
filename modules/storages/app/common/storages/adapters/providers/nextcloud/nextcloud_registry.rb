@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -37,6 +39,7 @@ module Storages
           end
 
           namespace("queries") do
+            register(:file_path_to_id_map, Queries::FilePathToIdMapQuery)
             register(:upload_link, Queries::UploadLinkQuery)
           end
         end

@@ -35,4 +35,6 @@ class RemoteIdentity < ApplicationRecord
 
   validates :user, uniqueness: { scope: %i[auth_source integration] }
   validates :origin_user_id, :user, :auth_source, :integration, presence: true
+
+  scope :of_user_and_client, ->(user, client) { find_by(user:, oauth_client: client) }
 end

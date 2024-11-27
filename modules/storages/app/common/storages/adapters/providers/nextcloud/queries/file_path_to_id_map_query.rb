@@ -32,43 +32,32 @@ module Storages
   module Adapters
     module Providers
       module Nextcloud
-        class Base
-          include TaggedLogging
-          include Dry::Monads::Result(Results::Error)
+        module Queries
+          class FilePathToIdMapQuery < Base
+            def initialize(*)
+              super
+              @propfind_query = PropfindQuery.new(@storage)
+            end
 
-          def self.call(storage:, auth_strategy:, input_data:)
-            new(storage).call(auth_strategy: auth_strategy, input_data: input_data)
-          end
-
-          def initialize(storage)
-            @storage = storage
-          end
-
-          private
-
-          def origin_user_id(caller:, auth_strategy:)
-            error = Results::Error.new(source: caller, code: :error)
-
-            auth_strategy.bind do |strategy|
-              case strategy.key
-              when :basic_auth
-                Success(@storage.username)
-              when :oauth_user_token
-                remote_id = RemoteIdentity.of_user_and_client(strategy.user, @storage.oauth_client)
-                if remote_id.present?
-                  Success(remote_id.origin_user_id)
-                else
-                  Failure(
-                    error.with(payload: "No origin user ID or user token found. Cannot execute query without user context.")
-                  )
+            def call(auth_strategy:, input_data:)
+              origin_user_id(caller: self.class, auth_strategy:).bind do |origin_user_id|
+                Authentication[auth_strategy].call(storage: @storage, http_options: headers(input_data.depth)) do |http|
+                  # nc:acl-list is only required to avoid https://community.openproject.org/wp/49628. See comment #4.
+                  @propfind_query.call(http:,
+                                       username: origin_user_id,
+                                       path: input_data.folder.path,
+                                       props: %w[oc:fileid nc:acl-list])
+                                 .fmap do |obj|
+                    obj.transform_values { |value| StorageFileId.new(id: value["fileid"]) }
+                  end
                 end
-              else
-                Failure(
-                  error.with(
-                    payload: "authentication strategy with user context found. Cannot execute query without user context."
-                  )
-                )
               end
+            end
+
+            private
+
+            def headers(depth)
+              { headers: { "Depth" => depth.to_s.downcase } }
             end
           end
         end
