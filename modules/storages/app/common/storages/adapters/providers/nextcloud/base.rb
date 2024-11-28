@@ -46,8 +46,8 @@ module Storages
 
           private
 
-          def origin_user_id(caller:, auth_strategy:)
-            error = Results::Error.new(source: caller, code: :error)
+          def origin_user_id(auth_strategy:)
+            error = Results::Error.new(source: self.class, code: :error)
 
             auth_strategy.bind do |strategy|
               case strategy.key

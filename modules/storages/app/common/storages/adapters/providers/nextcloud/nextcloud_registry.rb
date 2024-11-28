@@ -38,6 +38,11 @@ module Storages
             register(:user_bound, ->(user) { Input::Strategy.build(key: :oauth_user_token, user:) })
           end
 
+          namespace("commands") do
+            register(:create_folder, Commands::CreateFolderCommand)
+            register(:delete_folder, Commands::DeleteFolderCommand)
+          end
+
           namespace("queries") do
             register(:file_path_to_id_map, Queries::FilePathToIdMapQuery)
             register(:upload_link, Queries::UploadLinkQuery)

@@ -32,32 +32,32 @@ module Storages
   module Adapters
     module Providers
       module Nextcloud
-        module Queries
-          class FilePathToIdMapQuery < Base
-            def initialize(*)
-              super
-              @propfind_query = PropfindQuery.new(@storage)
-            end
-
+        module Commands
+          class DeleteFolderCommand < Base
             def call(auth_strategy:, input_data:)
               origin_user_id(auth_strategy:).bind do |origin_user_id|
-                Authentication[auth_strategy].call(storage: @storage, http_options: headers(input_data.depth)) do |http|
-                  # nc:acl-list is only required to avoid https://community.openproject.org/wp/49628. See comment #4.
-                  @propfind_query.call(http:,
-                                       username: origin_user_id,
-                                       path: input_data.folder.path,
-                                       props: %w[oc:fileid nc:acl-list])
-                                 .fmap do |obj|
-                    obj.transform_values { |value| StorageFileId.new(id: value["fileid"]) }
-                  end
+                Authentication[auth_strategy].call(storage: @storage) do |http|
+                  handle_response http.delete(
+                    UrlBuilder.url(@storage.uri, "remote.php/dav/files", origin_user_id, input_data.location)
+                  )
                 end
               end
             end
 
             private
 
-            def headers(depth)
-              { headers: { "Depth" => depth.to_s.downcase } }
+            def handle_response(response)
+              error = Results::Error.new(payload: response, source: self.class)
+              case response
+              in { status: 200..299 }
+                Success()
+              in { status: 404 }
+                Failure(error.with(code: :not_found))
+              in { status: 401 }
+                Failure(error.with(code: :unauthorized))
+              else
+                Failure(error.with(code: :error))
+              end
             end
           end
         end
