@@ -41,9 +41,11 @@ module Storages
           namespace("commands") do
             register(:create_folder, Commands::CreateFolderCommand)
             register(:delete_folder, Commands::DeleteFolderCommand)
+            register(:rename_file, Commands::RenameFileCommand)
           end
 
           namespace("queries") do
+            register(:file_info, Queries::FileInfoQuery)
             register(:file_path_to_id_map, Queries::FilePathToIdMapQuery)
             register(:upload_link, Queries::UploadLinkQuery)
           end

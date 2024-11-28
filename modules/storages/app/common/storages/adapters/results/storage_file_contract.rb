@@ -46,7 +46,8 @@ module Storages
           optional(:created_by_name).filled(:string)
           optional(:last_modified_by_name).filled(:string)
           optional(:location).filled(:string, format?: /^\//)
-          optional(:permissions).value(:array)
+          # Permissions are either array or string. We should standardise this
+          optional(:permissions).value { array? | str? }
         end
       end
     end

@@ -71,6 +71,8 @@ module Storages
           contract.call(**).to_monad.fmap { new(**_1.to_h) }
         end
 
+        def to_storage_file = StorageFile.build(**to_h)
+
         def clean_location
           return if location.nil?
 

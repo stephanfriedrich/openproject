@@ -62,7 +62,7 @@ RSpec.shared_examples_for "adapter rename_file_command: not found" do
 
     error = result.failure
     expect(error.code).to eq(:not_found)
-    expect(error.source).to eq(described_class)
+    expect(error.source).to eq(error_source || described_class)
   end
 end
 
