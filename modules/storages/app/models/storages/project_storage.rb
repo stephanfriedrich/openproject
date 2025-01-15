@@ -84,6 +84,7 @@ module Storages
     def open(user)
       auth_strategy = Peripherals::Registry.resolve("#{storage}.authentication.user_bound").call(user:, storage:)
 
+      # FIXME: Those aren't real queries. They are at most services at worst something else - 2025-01-15 @mereghost
       if project_folder_not_accessible?(user)
         Peripherals::Registry
           .resolve("#{storage}.queries.open_storage")
