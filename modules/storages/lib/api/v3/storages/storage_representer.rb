@@ -281,8 +281,7 @@ module API::V3::Storages
     end
 
     def authorization_state
-      ::Storages::Peripherals::StorageInteraction::Authentication.authorization_state(storage: represented,
-                                                                                      user: current_user)
+      ::Storages::Adapters::Authentication.authorization_state(storage: represented, user: current_user)
     end
   end
 end

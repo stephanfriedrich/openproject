@@ -49,6 +49,18 @@ module Storages
           raise Errors::UnknownAuthenticationStrategy, "Unknown #{auth.key} authentication scheme"
         end
       end
+
+      # TODO: Add tests for this - 2025-01-15 @mereghost
+      def self.authorization_state(storage:, user:)
+        auth_strategy = AuthenticationStrategies::OAuthUserToken.new(user)
+
+        Registry.resolve("#{storage}.queries.auth_check")
+                .call(storage:, auth_strategy:)
+                .either(
+                  ->(*) { :connected },
+                  ->(error) { error.code == :unauthorized ? :failed_authorization : :error }
+                )
+      end
     end
   end
 end

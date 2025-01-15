@@ -32,24 +32,34 @@ module Storages
   module Adapters
     module Providers
       module Nextcloud
-        NextcloudRegistry = Dry::Container::Namespace.new("nextcloud") do
-          namespace("authentication") do
-            register(:userless, ->(*) { Input::Strategy.build(key: :basic_auth) })
-            register(:user_bound, ->(user) { Input::Strategy.build(key: :oauth_user_token, user:) })
-          end
+        module Queries
+          class AuthCheckQuery < Base
+            def self.call(storage:, auth_strategy:)
+              new(storage).call(auth_strategy:)
+            end
 
-          namespace("commands") do
-            register(:create_folder, Commands::CreateFolderCommand)
-            register(:delete_folder, Commands::DeleteFolderCommand)
-            register(:rename_file, Commands::RenameFileCommand)
-            register(:set_permissions, Commands::SetPermissionsCommand)
-          end
+            def call(auth_strategy:)
+              http_options = { headers: { "OCS-APIRequest" => "true", "Accept" => "application/json" } }
 
-          namespace("queries") do
-            register(:auth_check, Queries::AuthCheckQuery)
-            register(:file_info, Queries::FileInfoQuery)
-            register(:file_path_to_id_map, Queries::FilePathToIdMapQuery)
-            register(:upload_link, Queries::UploadLinkQuery)
+              Authentication[auth_strategy].call(storage: @storage, http_options:) do |http|
+                handle_response http.get(UrlBuilder.url(@storage.uri, "/ocs/v1.php/cloud/user"))
+              end
+            end
+
+            private
+
+            def handle_response(response)
+              error = Results::Error.new(source: self.class, payload: response)
+
+              case response
+              in { status: 200..299 }
+                Success()
+              in { status: 401 }
+                Failure(error.with(code: :unauthorized))
+              else
+                Failure(error.with(code: :error))
+              end
+            end
           end
         end
       end

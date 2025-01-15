@@ -34,16 +34,13 @@ require_module_spec_helper
 RSpec.describe API::V3::Storages::StorageRepresenter, "rendering" do
   let(:oauth_client_credentials) { build_stubbed(:oauth_client) }
   let(:user) { create(:user) }
-  let(:auth_check_result) { ServiceResult.success }
+  let(:auth_check_result) { Success() }
   let(:representer) { described_class.new(storage, current_user: user, embed_links: true) }
 
   subject(:generated) { representer.to_json }
 
   before do
-    Storages::Peripherals::Registry.stub(
-      "#{storage}.queries.user",
-      ->(_) { auth_check_result }
-    )
+    Storages::Adapters::Registry.stub("#{storage}.queries.user", ->(_) { auth_check_result })
   end
 
   shared_examples_for "common file storage properties" do
@@ -103,7 +100,7 @@ RSpec.describe API::V3::Storages::StorageRepresenter, "rendering" do
       end
 
       context "if authentication check returns unauthorized" do
-        let(:auth_check_result) { ServiceResult.failure(errors: Storages::StorageError.new(code: :unauthorized)) }
+        let(:auth_check_result) { Failure(Storages::Adapters::Results::Error.new(code: :unauthorized, source: nil)) }
 
         it_behaves_like "has a titled link" do
           let(:link) { "authorizationState" }
@@ -113,7 +110,7 @@ RSpec.describe API::V3::Storages::StorageRepresenter, "rendering" do
       end
 
       context "if authentication check returns error" do
-        let(:auth_check_result) { ServiceResult.failure(errors: Storages::StorageError.new(code: :error)) }
+        let(:auth_check_result) { Failure(Storages::Adapters::Results::Error.new(code: :error, source: nil)) }
 
         it_behaves_like "has a titled link" do
           let(:link) { "authorizationState" }
