@@ -43,7 +43,6 @@ module Storages
             end
 
             let(:auth_strategy) { Adapters::Registry.resolve("one_drive.authentication.userless")[false] }
-
             let(:test_folder_data) do
               Input::CreateFolder.build(folder_name: "Permission Test Folder", parent_location: "/").value!
             end
@@ -126,18 +125,15 @@ module Storages
                 stub_request_with_timeout(:post, /invite$/)
                 allow(Rails.logger).to receive(:error)
 
-                user_permissions = [{ user_id: "d6e00f6d-1ae7-43e6-b0af-15d99a56d4ce", permissions: [:read_files] }]
+                user_permissions = [{ user_id: "d6e00f6d-1ae7-43e6-b0af-15d99a56d4ce",
+                                      permissions: [:read_files] }]
                 input_data = permission_input_data(test_folder.id, user_permissions)
                 described_class.call(storage:, auth_strategy:, input_data:)
 
-                # rubocop:disable Layout/LineLength
-                expect(Rails.logger)
-                  .to have_received(:error)
-                        .with(
-                          error_code: :error,
-                          data: %r{/lib/httpx/response.rb:260:in `full_message': timed out while waiting on select \(HTTPX::ConnectTimeoutError\)\n$}
-                        ).once
-                # rubocop:enable Layout/LineLength
+                expect(Rails.logger).to have_received(:error).with(
+                  error_code: :error,
+                  data: %r{timed out while waiting on select \(HTTPX::ConnectTimeoutError\)\n$}
+                ).once
               end
             end
 
