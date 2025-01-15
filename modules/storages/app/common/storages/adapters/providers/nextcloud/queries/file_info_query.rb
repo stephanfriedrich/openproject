@@ -37,7 +37,7 @@ module Storages
             FILE_INFO_PATH = "ocs/v1.php/apps/integration_openproject/fileinfo"
 
             def call(auth_strategy:, input_data:)
-              http_options = { headers: { "OCS-APIRequest" => "true", "Accept" => "application/json" } }
+              http_options = ocs_api_request_headers.deep_merge(headers: { "Accept" => "application/json" })
               Authentication[auth_strategy].call(storage: @storage, http_options:) do |http|
                 file_info(http, input_data.file_id).bind do |json|
                   validate_response_object(json).bind do |valid_response|

@@ -30,30 +30,12 @@
 
 module Storages
   module Adapters
-    module Providers
-      module Nextcloud
-        NextcloudRegistry = Dry::Container::Namespace.new("nextcloud") do
-          namespace("authentication") do
-            register(:userless, ->(*) { Input::Strategy.build(key: :basic_auth) })
-            register(:user_bound, ->(user) { Input::Strategy.build(key: :oauth_user_token, user:) })
-          end
+    module Input
+      AddUserToGroup = Data.define(:group, :user) do
+        private_class_method :new
 
-          namespace("commands") do
-            register(:add_user_to_group, Commands::AddUserToGroupCommand)
-            register(:create_folder, Commands::CreateFolderCommand)
-            register(:delete_folder, Commands::DeleteFolderCommand)
-            register(:remove_user_from_group, Commands::RemoveUserFromGroupCommand)
-            register(:rename_file, Commands::RenameFileCommand)
-            register(:set_permissions, Commands::SetPermissionsCommand)
-          end
-
-          namespace("queries") do
-            register(:auth_check, Queries::AuthCheckQuery)
-            register(:file_info, Queries::FileInfoQuery)
-            register(:file_path_to_id_map, Queries::FilePathToIdMapQuery)
-            register(:group_users, Queries::GroupUsersQuery)
-            register(:upload_link, Queries::UploadLinkQuery)
-          end
+        def self.build(group:, user:, contract: AddUserToGroupContract.new)
+          contract.call(group:, user:).to_monad.fmap { new(**_1.to_h) }
         end
       end
     end

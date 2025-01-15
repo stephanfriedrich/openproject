@@ -33,14 +33,17 @@ module Storages
     module Providers
       module Nextcloud
         module Queries
-          class AuthCheckQuery < Base
-            def self.call(storage:, auth_strategy:)
-              new(storage).call(auth_strategy:)
-            end
+          class GroupUsersQuery < Base
+            include TaggedLogging
 
-            def call(auth_strategy:)
-              Authentication[auth_strategy].call(storage: @storage, http_options: ocs_api_request_headers) do |http|
-                handle_response http.get(UrlBuilder.url(@storage.uri, "/ocs/v1.php/cloud/user"))
+            def call(auth_strategy:, input_data:)
+              with_tagged_logger do
+                Authentication[auth_strategy].call(storage: @storage, http_options: ocs_api_request_headers) do |http|
+                  url = UrlBuilder.url(@storage.uri, "ocs/v1.php/cloud/groups", input_data.group)
+                  info "Requesting user list for group #{input_data.group} via url #{url} "
+
+                  handle_response(http.get(url))
+                end
               end
             end
 
@@ -51,9 +54,31 @@ module Storages
 
               case response
               in { status: 200..299 }
-                Success()
+                handle_success_response(response, error)
+              in { status: 405 }
+                Failure(error.with(code: :not_allowed))
               in { status: 401 }
                 Failure(error.with(code: :unauthorized))
+              in { status: 404 }
+                Failure(error.with(code: :not_found))
+              in { status: 409 }
+                Failure(error.with(code: :conflict))
+              else
+                Failure(error.with(code: :error))
+              end
+            end
+
+            def handle_success_response(response, error)
+              xml = Nokogiri::XML(response.body.to_s)
+              status_code = xml.xpath("/ocs/meta/statuscode").text
+
+              case status_code
+              when "100"
+                group_users = xml.xpath("/ocs/data/users/element").map(&:text)
+                info "#{group_users.size} users found"
+                Success(group_users)
+              when "404"
+                Failure(error.with(code: :group_does_not_exist))
               else
                 Failure(error.with(code: :error))
               end
