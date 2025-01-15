@@ -100,7 +100,9 @@ module Storages
               path = xml.xpath("//d:response/d:href/text()").to_s
               timestamp = xml.xpath("//d:response/d:propstat/d:prop/d:getlastmodified/text()").to_s
               creator = xml.xpath("//d:response/d:propstat/d:prop/oc:owner-display-name/text()").to_s
-              location = CGI.unescapeURIComponent(path.gsub(path_prefix, "")).delete_suffix("/")
+              location = CGI.unescapeURIComponent(
+                UrlBuilder.path(CGI.unescapeURIComponent(path)).gsub(path_prefix, "")
+              ).delete_suffix("/")
 
               Results::StorageFile.build(
                 id: xml.xpath("//d:response/d:propstat/d:prop/oc:fileid/text()").to_s,

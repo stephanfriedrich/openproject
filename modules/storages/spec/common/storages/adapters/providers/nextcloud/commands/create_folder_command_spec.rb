@@ -41,8 +41,8 @@ module Storages
             let(:storage) do
               create(:nextcloud_storage_with_local_connection, :as_not_automatically_managed, oauth_client_token_user: user)
             end
-            let(:auth_strategy) { Registry["nextcloud.authentication.user_bound"].call(user) }
 
+            let(:auth_strategy) { Registry["nextcloud.authentication.user_bound"].call(user) }
             let(:input_data) { Input::CreateFolder.build(folder_name:, parent_location:).value! }
 
             it_behaves_like "adapter create_folder_command: basic command setup"
@@ -77,6 +77,28 @@ module Storages
               let(:error_source) { described_class }
 
               it_behaves_like "adapter create_folder_command: folder already exists"
+            end
+
+            # For the VCR tests in this block it's necessary to
+            # create a user in NextCloud with the account name `member@example1`
+            # and use it's oauth access & refresh tokens on .env.test.local
+            describe "user with custom origin name" do
+              let(:storage) do
+                create(
+                  :nextcloud_storage_with_local_connection,
+                  :as_not_automatically_managed,
+                  origin_user_id: "member@example1",
+                  oauth_client_token_user: user
+                )
+              end
+
+              context "when creating a folder as a non admin user", vcr: "nextcloud/create_folder_member" do
+                let(:folder_name) { "Földer CreatedBy Çommand" }
+                let(:parent_location) { "/" }
+                let(:path) { "/#{folder_name}" }
+
+                it_behaves_like "adapter create_folder_command: successful folder creation"
+              end
             end
 
             private
