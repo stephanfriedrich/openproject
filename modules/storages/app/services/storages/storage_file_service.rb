@@ -35,16 +35,15 @@ module Storages
     end
 
     def call(user:, storage:, file_id:)
-      auth_strategy = strategy(storage, user)
+      auth_strategy = Adapters::Registry.resolve("#{storage}.authentication.user_bound").call(user)
 
       info "Requesting file #{file_id} information on #{storage.name}"
-      Peripherals::Registry.resolve("#{storage}.queries.file_info").call(storage:, auth_strategy:, file_id:)
-    end
+      input_data = Adapters::Input::FileInfo.build(file_id:).value_or { return Failure(_1) }
 
-    private
-
-    def strategy(storage, user)
-      Peripherals::Registry.resolve("#{storage}.authentication.user_bound").call(user:, storage:)
+      Adapters::Registry.resolve("#{storage}.queries.file_info").call(storage:, auth_strategy:, input_data:).either(
+        ->(result) { ServiceResult.success(result:) },
+        ->(failure) { ServiceResult.failure(errors: failure) }
+      )
     end
   end
 end

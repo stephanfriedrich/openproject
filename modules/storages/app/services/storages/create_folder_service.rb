@@ -33,45 +33,46 @@ module Storages
     using Peripherals::ServiceResultRefinements
 
     def self.call(storage:, user:, name:, parent_id:)
-      new.call(storage:, user:, name:, parent_id:)
+      new(storage).call(user:, name:, parent_id:)
     end
 
-    def call(storage:, user:, name:, parent_id:)
-      auth_strategy = Peripherals::Registry.resolve("#{storage}.authentication.user_bound").call(user:, storage:)
+    def initialize(storage)
+      super()
+      @storage = storage
+    end
 
-      Peripherals::Registry
-        .resolve("#{storage}.commands.create_folder")
-        .call(
-          storage:,
-          auth_strategy:,
-          folder_name: name,
-          parent_location: parent_path(parent_id, storage, user)
-        )
+    def call(user:, name:, parent_id:)
+      auth_strategy = Adapters::Registry.resolve("#{@storage}.authentication.user_bound").call(user)
+      parent_location = parent_path(parent_id, user).on_failure { return _1 }.result
+
+      Adapters::Input::CreateFolder.build(folder_name: name, parent_location:).bind do |input_data|
+        Adapters::Registry.resolve("#{@storage}.commands.create_folder")
+                          .call(storage: @storage, auth_strategy:, input_data:)
+                          .either(
+                            ->(folder) { ServiceResult.success(result: folder) },
+                            ->(failure) { ServiceResult.failure(errors: failure) }
+                          )
+      end
     end
 
     private
 
-    def parent_path(parent_id, storage, user)
-      case storage.short_provider_type
+    def parent_path(parent_id, user)
+      case @storage.short_provider_type
       when "nextcloud"
-        location_from_file_info(parent_id, storage, user)
+        location_from_file_info(parent_id, user)
       when "one_drive"
-        Peripherals::ParentFolder.new(parent_id)
+        ServiceResult.success(result: parent_id)
       else
         raise "Unknown Storage Type"
       end
     end
 
-    def location_from_file_info(parent_id, storage, user)
-      StorageFileService
-        .call(storage: storage, user: user, file_id: parent_id)
-        .match(
-          on_success: lambda { |folder_info|
-            path = URI.decode_uri_component(folder_info.location)
-            Peripherals::ParentFolder.new(path)
-          },
-          on_failure: ->(error) { raise error }
-        )
+    def location_from_file_info(parent_id, user)
+      StorageFileService.call(storage: @storage, user:, file_id: parent_id).on_success do |success|
+        path = URI.decode_uri_component(success.result.location)
+        return ServiceResult.success(result: path)
+      end
     end
   end
 end
