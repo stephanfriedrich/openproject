@@ -212,7 +212,6 @@ gem "mini_magick", "~> 5.2.0", require: false
 gem "validate_url"
 
 # Storages support code
-gem "dry-auto_inject"
 gem "dry-container"
 gem "dry-monads"
 gem "dry-validation"

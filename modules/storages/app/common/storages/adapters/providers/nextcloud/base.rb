@@ -46,7 +46,8 @@ module Storages
 
           private
 
-          def ocs_api_request_headers = { headers: { "OCS-APIRequest" => "true", "Accept" => "application/json" } }
+          def ocs_api_request_headers = { headers: { "OCS-APIRequest" => "true" } }
+          def depth_header(depth) = { headers: { "Depth" => depth.to_s } }
 
           def origin_user_id(auth_strategy:)
             error = Results::Error.new(source: self.class, code: :error)

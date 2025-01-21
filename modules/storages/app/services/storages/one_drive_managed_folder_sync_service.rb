@@ -189,15 +189,13 @@ module Storages
 
       file_list = @commands[:files].call(auth_strategy:, input_data:).value_or do |error|
         log_adapter_error(error, { drive_id: })
-        add_error(:remote_folders, error, options: { drive_id: }).fail!
+        add_error(:remote_folders, error, options: { drive_id: })
         return Failure()
       end
 
       Success(filter_folders_from(file_list.files))
     end
 
-    # @param files [Array<Storages::StorageFile>]
-    # @return Hash{String => String} a hash of item ID and item name.
     def filter_folders_from(files)
       folders = files.each_with_object({}) do |file, hash|
         next unless file.folder?
@@ -234,20 +232,6 @@ module Storages
 
     def build_permissions_input_data(file_id, user_permissions)
       Adapters::Input::SetPermissions.build(file_id:, user_permissions:)
-    end
-
-    # @param attribute [Symbol] attribute to which the error will be tied to
-    # @param error [Storages::Adapters::Results::Error] An adapter error result
-    # @param options [Hash{Symbol => Object}] optional extra parameters for the message generation
-    # @return ServiceResult
-    def add_error(attribute, error, options: {})
-      if %i[error unauthorized].include? error.code
-        @result.errors.add(:base, error.code, **options)
-      else
-        @result.errors.add(attribute, error.code, **options)
-      end
-
-      @result
     end
 
     def auth_strategy

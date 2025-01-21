@@ -73,7 +73,7 @@ module Storages
                                             CGI.unescape(target_path(file_info, name)))
 
               Authentication[auth_strategy].call(storage: @storage) do |http|
-                handle_response http.request("MOVE", source_path, headers: { "Destination" => destination })
+                handle_response http.request("MOVE", source_path, headers: { "Destination" => destination, "Overwrite" => "F" })
               end
             end
 
@@ -86,6 +86,8 @@ module Storages
               case response
               in { status: 200..299 }
                 Success()
+              in { status: 412 }
+                Failure(error.with(code: :conflict))
               in { status: 404 }
                 Failure(error.with(code: :not_found))
               in { status: 401 }

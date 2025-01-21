@@ -57,17 +57,19 @@ module Storages
     private
 
     # @param attribute [Symbol] attribute to which the error will be tied to
-    # @param storage_error [Storages::StorageError] an StorageError instance
+    # @param error [Storages::Adapters::Results::Error] An adapter error result
     # @param options [Hash{Symbol => Object}] optional extra parameters for the message generation
     # @return ServiceResult
-    def add_error(attribute, storage_error, options: {})
-      case storage_error.code
-      when :error, :unauthorized
-        @result.errors.add(:base, storage_error.code, **options)
+    def add_error(attribute, error, options: {})
+      log_adapter_error(error, options)
+
+      if %i[error unauthorized].include? error.code
+        @result.errors.add(:base, error.code, **options)
       else
-        @result.errors.add(attribute, storage_error.code, **options)
+        @result.errors.add(attribute, error.code, **options)
       end
 
+      @result.success = false
       @result
     end
   end

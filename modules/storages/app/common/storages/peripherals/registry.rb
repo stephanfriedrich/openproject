@@ -28,8 +28,6 @@
 # See COPYRIGHT and LICENSE files for more details.
 #++
 
-require "dry/auto_inject"
-
 module Storages
   module Peripherals
     class Registry

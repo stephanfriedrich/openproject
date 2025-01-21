@@ -36,7 +36,9 @@ module Storages
           using ServiceResultRefinements
 
           class << self
-            def ocs_api_request; end
+            def ocs_api_request
+              { headers: { "OCS-APIRequest" => "true" } }
+            end
 
             def accept_json
               { headers: { "Accept" => "application/json" } }

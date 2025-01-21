@@ -140,8 +140,9 @@ en:
               conflict: 'The user %{user} could not be removed from the %{group} group for the following reason: %{reason}'
               failed_to_remove: 'The user %{user} could not be removed from the %{group} group for the following reason: %{reason}'
             rename_project_folder:
-              forbidden: OpenProject user does not have access to %{current_path} folder.
-              not_found: "%{current_path} wasn't found."
+              forbidden: OpenProject user does not have access to %{new_name} folder.
+              not_found: "%{new_name} wasn't found."
+              conflict: OpenProject could not rename the project folder to %{new_name} as a folder with the same name already exists
             set_folders_permissions:
               permission_not_set: could not set permissions on %{path}.
           error: An unexpected error occurred. Please ensure that your Nextcloud instance is reachable and check OpenProject worker logs for more information

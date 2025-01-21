@@ -51,6 +51,7 @@ module Storages
             register(:auth_check, Queries::AuthCheckQuery)
             register(:file_info, Queries::FileInfoQuery)
             register(:file_path_to_id_map, Queries::FilePathToIdMapQuery)
+            register(:files, Queries::FilesQuery)
             register(:group_users, Queries::GroupUsersQuery)
             register(:upload_link, Queries::UploadLinkQuery)
           end

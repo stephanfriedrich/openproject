@@ -37,11 +37,11 @@ module Storages
             def call(auth_strategy:, input_data:)
               with_tagged_logger do
                 info "Trying to create folder #{input_data.folder_name} under #{input_data.parent_location}"
-                origin_user_id(auth_strategy:).bind do |origin_user_id|
-                  path_prefix = UrlBuilder.path(@storage.uri.path, "remote.php/dav/files", origin_user_id)
+                origin_user_id(auth_strategy:).bind do |origin_user|
+                  path_prefix = UrlBuilder.path(@storage.uri.path, "remote.php/dav/files", origin_user)
                   request_url = UrlBuilder.url(@storage.uri,
                                                "remote.php/dav/files",
-                                               origin_user_id,
+                                               origin_user,
                                                input_data.parent_location.path,
                                                input_data.folder_name)
 
@@ -87,6 +87,7 @@ module Storages
                     xml["oc"].fileid
                     xml["oc"].size
                     xml["d"].getlastmodified
+                    xml["oc"].permissions
                     xml["oc"].send(:"owner-display-name")
                   end
                 end
