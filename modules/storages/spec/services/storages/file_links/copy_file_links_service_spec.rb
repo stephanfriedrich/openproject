@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -64,13 +66,11 @@ RSpec.describe Storages::FileLinks::CopyFileLinksService, :webmock do
   end
 
   context "when AMPF is enabled" do
-    let(:files_info) { class_double(Storages::Peripherals::StorageInteraction::Nextcloud::FilesInfoQuery) }
-    let(:file_path_to_id) { class_double(Storages::Peripherals::StorageInteraction::Nextcloud::FilePathToIdMapQuery) }
-    let(:auth_strategy) do
-      Storages::Peripherals::StorageInteraction::AuthenticationStrategies::Strategy.new(key: :basic_auth)
-    end
+    let(:files_info) { class_double(Storages::Adapters::Providers::Nextcloud::Queries::FilesInfoQuery) }
+    let(:file_path_to_id) { class_double(Storages::Adapters::Providers::Nextcloud::Queries::FilePathToIdMapQuery) }
+    let(:auth_strategy) { Storages::Adapters::Registry["nextcloud.authentication.userless"].call }
 
-    let(:target_folder) { Storages::Peripherals::ParentFolder.new(target_storage.managed_project_folder_path) }
+    let(:target_folder) { target_storage.managed_project_folder_path }
 
     let(:remote_source_info) do
       source_links.map do |link|
@@ -88,18 +88,16 @@ RSpec.describe Storages::FileLinks::CopyFileLinksService, :webmock do
     end
 
     before do
-      Storages::Peripherals::Registry.stub("nextcloud.queries.files_info", files_info)
-      Storages::Peripherals::Registry.stub("nextcloud.authentication.userless", -> { auth_strategy })
-      Storages::Peripherals::Registry.stub("nextcloud.queries.file_path_to_id_map", file_path_to_id)
+      Storages::Adapters::Registry.stub("nextcloud.queries.files_info", files_info)
+      Storages::Adapters::Registry.stub("nextcloud.queries.file_path_to_id_map", file_path_to_id)
 
-      allow(Storages::Peripherals::ParentFolder).to receive(:new).with(target_storage.project_folder_location)
-                                                                 .and_return(target_folder)
+      info_data = Storages::Adapters::Input::FilesInfo.build(file_ids: source_links.map(&:origin_id)).value!
+      allow(files_info).to receive(:call).with(input_data: info_data, storage: source, auth_strategy:)
+                                         .and_return(Success(remote_source_info))
 
-      allow(files_info).to receive(:call).with(file_ids: source_links.map(&:origin_id), storage: source, auth_strategy:)
-                                         .and_return(ServiceResult.success(result: remote_source_info))
-
-      allow(file_path_to_id).to receive(:call).with(storage: target, auth_strategy:, folder: target_folder)
-                                              .and_return(ServiceResult.success(result: path_to_ids))
+      map_data = Storages::Adapters::Input::FilePathToIdMap.build(folder: target_folder).value!
+      allow(file_path_to_id).to receive(:call).with(storage: target, auth_strategy:, input_data: map_data)
+                                              .and_return(Success(path_to_ids))
     end
 
     it "create links to the newly copied files" do

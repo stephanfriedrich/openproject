@@ -56,8 +56,6 @@ module Storages
 
     private
 
-    attr_reader :result
-
     # @param attribute [Symbol] attribute to which the error will be tied to
     # @param error [Storages::Adapters::Results::Error] An adapter error result
     # @param options [Hash{Symbol => Object}] optional extra parameters for the message generation

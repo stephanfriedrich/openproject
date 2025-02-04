@@ -30,8 +30,7 @@
 
 module Storages
   module FileLinks
-    class CopyFileLinksService
-      include TaggedLogging
+    class CopyFileLinksService < BaseService
       include OpenProject::LocaleHelper
 
       def self.call(source:, target:, user:, work_packages_map:)
@@ -39,6 +38,7 @@ module Storages
       end
 
       def initialize(source:, target:, user:, work_packages_map:)
+        super()
         @source = source
         @target = target
         @user = user
@@ -55,63 +55,66 @@ module Storages
           info "Found #{source_file_links.count} source file links"
           with_locale_for(@user) do
             info "Creating file links..."
-            if @source.project_folder_automatic?
-              create_managed_file_links(source_file_links)
-            else
-              create_unmanaged_file_links(source_file_links)
-            end
+            copy_file_links(source_file_links)
           end
         end
         info "File link creation finished"
+        @result
       end
 
       private
 
-      # rubocop:disable Metrics/AbcSize
-      def create_managed_file_links(source_file_links)
-        info "Getting information about the source file links"
-        source_info = source_files_info(source_file_links).on_failure do |failed|
-          log_storage_error(failed.errors)
-          return failed
-        end
-
-        info "Getting information about the copied target files"
-        target_map = target_files_map.on_failure do |failed|
-          log_storage_error(failed.errors)
-          return failed
-        end
-
-        info "Building equivalency map..."
-        location_map = build_location_map(source_info.result, target_map.result)
-
-        info "Creating file links based on the location map #{location_map}"
-        source_file_links.find_each do |source_link|
-          next if location_map[source_link.origin_id].blank?
-
-          attributes = source_link.dup.attributes
-          attributes.merge!(
-            "storage_id" => @target.storage_id,
-            "creator_id" => @user.id,
-            "container_id" => @work_packages_map[source_link.container_id],
-            "origin_id" => location_map[source_link.origin_id]
-          )
-
-          CreateService.new(user: @user, contract_class: CopyContract)
-                       .call(attributes).on_failure { |failed| log_errors(failed) }
+      def copy_file_links(source_file_links)
+        if @source.project_folder_automatic?
+          create_managed_file_links(source_file_links).or do |error|
+            log_adapter_error(error)
+            @result.success = false
+          end
+        else
+          create_unmanaged_file_links(source_file_links)
         end
       end
-      # rubocop:enable Metrics/AbcSize
+
+      def create_managed_file_links(source_file_links)
+        info "Getting information about the source file links"
+        source_files_info(source_file_links).bind do |source_info|
+          info "Getting information about the copied target files"
+          target_files_map.bind do |target_map|
+            info "Building equivalency map..."
+            location_map = build_location_map(source_info, target_map)
+
+            info "Creating file links based on the location map #{location_map}"
+            source_file_links.find_each do |source_link|
+              target_location = location_map[source_link.origin_id]
+              next if target_location.blank?
+
+              create_target_file_link(source_link, target_location)
+            end
+            Success()
+          end
+        end
+      end
+
+      def create_target_file_link(source_link, remote_id)
+        attributes = source_link.dup.attributes
+        attributes.merge!(
+          "storage_id" => @target.storage_id,
+          "creator_id" => @user.id,
+          "container_id" => @work_packages_map[source_link.container_id],
+          "origin_id" => remote_id
+        )
+
+        CreateService.new(user: @user, contract_class: CopyContract).call(attributes)
+      end
 
       def build_location_map(source_files, target_location_map)
         # We need this due to inconsistencies of how we represent the File Path
         target_location_map.transform_keys! { |key| key.starts_with?("/") ? key : "/#{key}" }
 
-        source_location_map = source_files.to_h { |info| [info.id.to_s, info.clean_location] }
+        source_files.to_h do |info|
+          target = info.clean_location.gsub(@source.managed_project_folder_path, @target.managed_project_folder_path)
 
-        source_location_map.each_with_object({}) do |(id, location), output|
-          target = location.gsub(@source.managed_project_folder_path, @target.managed_project_folder_path)
-
-          output[id] = target_location_map[target]&.id || id
+          [info.id.to_s, target_location_map[target]&.id || id]
         end
       end
 
@@ -120,9 +123,10 @@ module Storages
       end
 
       def source_files_info(source_file_links)
-        Adapters::Registry
-          .resolve("#{@source.storage}.queries.files_info")
-          .call(storage: @source.storage, auth_strategy:, file_ids: source_file_links.pluck(:origin_id))
+        Adapters::Input::FilesInfo.build(file_ids: source_file_links.pluck(:origin_id)).bind do |input_data|
+          Adapters::Registry.resolve("#{@source.storage}.queries.files_info")
+                            .call(storage: @source.storage, auth_strategy:, input_data:)
+        end
       end
 
       def target_files_map
@@ -139,14 +143,8 @@ module Storages
           attributes["creator_id"] = @user.id
           attributes["container_id"] = @work_packages_map[source_file_link.container_id]
 
-          FileLinks::CreateService.new(user: @user, contract_class: CopyContract)
-                                  .call(attributes).on_failure { |failed| log_errors(failed) }
+          FileLinks::CreateService.new(user: @user, contract_class: CopyContract).call(attributes)
         end
-      end
-
-      def log_errors(failure)
-        error failure.inspect
-        error failure.errors.inspect
       end
     end
   end

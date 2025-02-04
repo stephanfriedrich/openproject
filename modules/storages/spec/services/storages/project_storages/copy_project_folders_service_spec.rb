@@ -37,29 +37,28 @@ RSpec.describe Storages::ProjectStorages::CopyProjectFoldersService, :webmock do
   let(:storage) { create(:nextcloud_storage, :as_automatically_managed) }
   let(:target) { create(:project_storage, storage:) }
   let(:system_user) { create(:system) }
-  let(:result_data) { Storages::Adapters::ResultData::CopyTemplateFolder.build(nil, nil, false) }
+  let(:result_data) { Storages::Adapters::Results::CopyTemplateFolder.new(nil, nil, false) }
+  let(:copy_folder_command) { class_double(Storages::Adapters::Providers::Nextcloud::Commands::CopyTemplateFolderCommand) }
+  let(:input_data) do
+    Storages::Adapters::Input::CopyTemplateFolder
+      .build(source: source.managed_project_folder_path, destination: target.managed_project_folder_path).value!
+  end
+  let(:auth_strategy) { Storages::Adapters::Registry["nextcloud.authentication.userless"].call }
 
   subject(:service) { described_class }
+
+  before { Storages::Adapters::Registry.stub("nextcloud.commands.copy_template_folder", copy_folder_command) }
 
   context "with automatically managed project folders" do
     let(:source) { create(:project_storage, :as_automatically_managed, storage:) }
 
+    before do
+      allow(copy_folder_command).to receive(:call)
+                                      .with(storage:, auth_strategy:, input_data:)
+                                      .and_return(Success(result_data.with(polling_url: "https://polling.url.de/cool/subresources")))
+    end
+
     it "if polling is required, returns a nil id and an url" do
-      Storages::Adapters::Registry
-        .stub("#{source.storage.short_provider_type}.commands.copy_template_folder",
-              ->(auth_strategy:, storage:, source_path:, destination_path:) do
-                strategy = Storages::Adapters::Registry
-                  .resolve("#{source.storage.short_provider_type}.authentication.userless").call
-
-                expect(auth_strategy.class).to eq(strategy.class)
-                expect(storage).to eq(source.storage)
-                expect(source_path).to eq(source.project_folder_location)
-                expect(destination_path).to eq(target.managed_project_folder_path)
-
-                # Return a success for the provider copy with no polling required
-                ServiceResult.success(result: result_data.with(polling_url: "https://polling.url.de/cool/subresources"))
-              end)
-
       result = service.call(source:, target:)
 
       expect(result).to be_success
@@ -108,10 +107,8 @@ RSpec.describe Storages::ProjectStorages::CopyProjectFoldersService, :webmock do
     let(:source) { create(:project_storage, :as_automatically_managed, storage:) }
 
     it "the target folder already exists" do
-      Storages::Adapters::Registry
-        .stub("#{source.storage.short_provider_type}.commands.copy_template_folder",
-              ->(_) { build_failure(:conflict) })
-
+      allow(copy_folder_command).to receive(:call).with(storage:, auth_strategy:, input_data:)
+                                                  .and_return(build_failure(:conflict))
       result = service.call(source:, target:)
 
       expect(result).to be_failure
@@ -121,9 +118,8 @@ RSpec.describe Storages::ProjectStorages::CopyProjectFoldersService, :webmock do
     end
 
     it "source folder was not found" do
-      Storages::Adapters::Registry
-        .stub("#{source.storage.short_provider_type}.commands.copy_template_folder",
-              ->(_) { build_failure(:not_found) })
+      allow(copy_folder_command).to receive(:call).with(storage:, auth_strategy:, input_data:)
+                                                  .and_return(build_failure(:not_found))
 
       result = service.call(source:, target:)
 
@@ -134,10 +130,8 @@ RSpec.describe Storages::ProjectStorages::CopyProjectFoldersService, :webmock do
     end
 
     it "token is unauthorized to do the copy" do
-      Storages::Adapters::Registry
-        .stub("#{source.storage.short_provider_type}.commands.copy_template_folder",
-              ->(_) { build_failure(:unauthorized) })
-
+      allow(copy_folder_command).to receive(:call).with(storage:, auth_strategy:, input_data:)
+                                                  .and_return(build_failure(:unauthorized))
       result = service.call(source:, target:)
 
       expect(result).to be_failure
@@ -146,10 +140,8 @@ RSpec.describe Storages::ProjectStorages::CopyProjectFoldersService, :webmock do
     end
 
     it "token has no access to the source folder" do
-      Storages::Adapters::Registry
-        .stub("#{source.storage.short_provider_type}.commands.copy_template_folder",
-              ->(_) { build_failure(:forbidden) })
-
+      allow(copy_folder_command).to receive(:call).with(storage:, auth_strategy:, input_data:)
+                                                  .and_return(build_failure(:forbidden))
       result = service.call(source:, target:)
 
       expect(result).to be_failure
@@ -162,9 +154,7 @@ RSpec.describe Storages::ProjectStorages::CopyProjectFoldersService, :webmock do
   private
 
   def build_failure(code)
-    response = "Response info"
-    storage_error = Storages::Peripherals::StorageInteraction::OneDrive::Util
-      .storage_error(response:, code:, source: described_class, log_message: "Log message for #{code}")
-    ServiceResult.failure(result: code, errors: storage_error)
+    error = Storages::Adapters::Results::Error.new(source: copy_folder_command).with(code:)
+    Failure(error)
   end
 end
