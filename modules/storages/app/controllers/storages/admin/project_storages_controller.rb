@@ -77,8 +77,7 @@ class Storages::Admin::ProjectStoragesController < Projects::SettingsController
   def oauth_access_grant
     @project_storage = @object
     storage = @project_storage.storage
-    auth_state = ::Storages::Peripherals::StorageInteraction::Authentication
-                   .authorization_state(storage:, user: current_user)
+    auth_state = ::Storages::Adapters::Authentication.authorization_state(storage:, user: current_user)
 
     if auth_state == :connected
       redirect_to(external_file_storages_project_settings_project_storages_path)

@@ -52,7 +52,7 @@ module Storages
 
       # TODO: Add tests for this - 2025-01-15 @mereghost
       def self.authorization_state(storage:, user:)
-        auth_strategy = AuthenticationStrategies::OAuthUserToken.new(user)
+        auth_strategy = Input::Strategy.build(user:, key: :oauth_user_token)
 
         Registry.resolve("#{storage}.queries.auth_check")
                 .call(storage:, auth_strategy:)

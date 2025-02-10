@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -56,8 +58,8 @@ RSpec.describe "projects/:project_id/project_storages/:id/open" do
 
           context "when user is able to read project_folder" do
             before do
-              Storages::Peripherals::Registry.stub(
-                "nextcloud.queries.file_info", ->(_) { ServiceResult.success }
+              Storages::Adapters::Registry.stub(
+                "nextcloud.queries.file_info", ->(_) { Success() }
               )
             end
 
@@ -82,12 +84,10 @@ RSpec.describe "projects/:project_id/project_storages/:id/open" do
 
           context "when user is not able to read project_folder" do
             let(:code) { :forbidden }
+            let(:error) { Storages::Adapters::Results::Error.new(code:, source: Object) }
 
             before do
-              Storages::Peripherals::Registry.stub(
-                "nextcloud.queries.file_info",
-                ->(_) { ServiceResult.failure(result: code, errors: Storages::StorageError.new(code:)) }
-              )
+              Storages::Adapters::Registry.stub("nextcloud.queries.file_info", ->(_) { Failure(error) })
             end
 
             context "html" do
@@ -125,6 +125,8 @@ RSpec.describe "projects/:project_id/project_storages/:id/open" do
               end
 
               context "when error code is forbidden" do
+                let(:code) { :forbidden }
+
                 it "redirects to project overview page with modal flash set up" do
                   get route, {}, { "HTTP_ACCEPT" => "text/html" }
 
