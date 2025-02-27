@@ -32,12 +32,12 @@ require "spec_helper"
 require_module_spec_helper
 
 RSpec.describe Storages::ProjectStorages::CopyProjectFoldersService, :webmock do
-  using Storages::Peripherals::ServiceResultRefinements
+  # using Storages::Peripherals::ServiceResultRefinements
 
   let(:storage) { create(:nextcloud_storage, :as_automatically_managed) }
   let(:target) { create(:project_storage, storage:) }
   let(:system_user) { create(:system) }
-  let(:result_data) { Storages::Peripherals::StorageInteraction::ResultData::CopyTemplateFolder.new(nil, nil, false) }
+  let(:result_data) { Storages::Adapters::ResultData::CopyTemplateFolder.build(nil, nil, false) }
 
   subject(:service) { described_class }
 
@@ -45,10 +45,10 @@ RSpec.describe Storages::ProjectStorages::CopyProjectFoldersService, :webmock do
     let(:source) { create(:project_storage, :as_automatically_managed, storage:) }
 
     it "if polling is required, returns a nil id and an url" do
-      Storages::Peripherals::Registry
+      Storages::Adapters::Registry
         .stub("#{source.storage.short_provider_type}.commands.copy_template_folder",
               ->(auth_strategy:, storage:, source_path:, destination_path:) do
-                strategy = Storages::Peripherals::Registry
+                strategy = Storages::Adapters::Registry
                   .resolve("#{source.storage.short_provider_type}.authentication.userless").call
 
                 expect(auth_strategy.class).to eq(strategy.class)
@@ -108,7 +108,7 @@ RSpec.describe Storages::ProjectStorages::CopyProjectFoldersService, :webmock do
     let(:source) { create(:project_storage, :as_automatically_managed, storage:) }
 
     it "the target folder already exists" do
-      Storages::Peripherals::Registry
+      Storages::Adapters::Registry
         .stub("#{source.storage.short_provider_type}.commands.copy_template_folder",
               ->(_) { build_failure(:conflict) })
 
@@ -121,7 +121,7 @@ RSpec.describe Storages::ProjectStorages::CopyProjectFoldersService, :webmock do
     end
 
     it "source folder was not found" do
-      Storages::Peripherals::Registry
+      Storages::Adapters::Registry
         .stub("#{source.storage.short_provider_type}.commands.copy_template_folder",
               ->(_) { build_failure(:not_found) })
 
@@ -134,7 +134,7 @@ RSpec.describe Storages::ProjectStorages::CopyProjectFoldersService, :webmock do
     end
 
     it "token is unauthorized to do the copy" do
-      Storages::Peripherals::Registry
+      Storages::Adapters::Registry
         .stub("#{source.storage.short_provider_type}.commands.copy_template_folder",
               ->(_) { build_failure(:unauthorized) })
 
@@ -146,7 +146,7 @@ RSpec.describe Storages::ProjectStorages::CopyProjectFoldersService, :webmock do
     end
 
     it "token has no access to the source folder" do
-      Storages::Peripherals::Registry
+      Storages::Adapters::Registry
         .stub("#{source.storage.short_provider_type}.commands.copy_template_folder",
               ->(_) { build_failure(:forbidden) })
 

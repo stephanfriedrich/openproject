@@ -72,20 +72,19 @@ module Storages
         end
       end
 
-      def initiate_copy(storage, source_path, destination_path)
-        Peripherals::Registry
-          .resolve("#{storage}.commands.copy_template_folder")
-          .call(auth_strategy: auth_strategy(storage.short_provider_type),
-                storage:,
-                source_path:,
-                destination_path:).on_failure do |failed|
-          log_storage_error(failed.errors)
-          add_error(:base, failed.errors, options: { destination_path:, source_path: }).fail!
+      def initiate_copy(storage, source, destination)
+        Adapters::Input::CopyTemplateFolder.build(source:, destination:).bind do |input_data|
+          Adapters::Registry
+            .resolve("#{storage}.commands.copy_template_folder")
+            .call(auth_strategy: auth_strategy(storage), storage:, input_data:).on_failure do |failed|
+            log_storage_error(failed.errors)
+            add_error(:base, failed.errors, options: { destination_path:, source_path: }).fail!
+          end
         end
       end
 
-      def auth_strategy(short_provider_type)
-        Peripherals::Registry.resolve("#{short_provider_type}.authentication.userless").call
+      def auth_strategy(storage)
+        Adapters::Registry.resolve("#{storage}.authentication.userless").call
       end
     end
   end

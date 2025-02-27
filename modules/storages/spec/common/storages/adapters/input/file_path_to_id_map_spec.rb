@@ -37,7 +37,7 @@ module Storages
         describe ".new" do
           it "discourages direct instantiation" do
             expect { described_class.new(folder: "file_id", depth: 1) }
-              .to raise_error(NoMethodError, /private method `new'/)
+              .to raise_error(NoMethodError, /private method 'new'/)
           end
         end
 

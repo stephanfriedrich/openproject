@@ -63,9 +63,9 @@ module Storages
             with_tagged_logger do
               Authentication[auth_strategy].call(storage: @storage) do |http|
                 item = input_data.file_id
-                item_exists?(http, item).on_failure { return _1 }
+                item_exists?(http, item).on_failure { return it }
 
-                current_permissions = get_current_permissions(http, item).on_failure { return _1 }.result
+                current_permissions = get_current_permissions(http, item).on_failure { return it }.result
                 info "Read and write permissions found: #{current_permissions}"
 
                 role_to_user_map(input_data).each_pair do |role, user_ids|

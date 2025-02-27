@@ -30,8 +30,6 @@
 
 module Storages
   class OneDriveManagedFolderSyncService < BaseService
-    using Peripherals::ServiceResultRefinements
-
     OP_PERMISSIONS = %i[read_files write_files create_files delete_files share_files].freeze
 
     def self.i18n_key = "OneDriveSyncService"
@@ -41,8 +39,8 @@ module Storages
     end
 
     def initialize(storage)
+      super()
       @storage = storage
-      @result = ServiceResult.success(errors: ActiveModel::Errors.new(self))
       setup_commands
     end
 
@@ -113,7 +111,6 @@ module Storages
         .either(
           ->(input_data) do
             @commands[:set_permissions].call(auth_strategy:, input_data:).or do |error|
-              log_adapter_error(error, item_id:, context: "hide_folder")
               add_error(:hide_inactive_folders, error, options: { path: folder_map[item_id] })
             end
           end,
@@ -144,7 +141,6 @@ module Storages
 
       Adapters::Input::RenameFile.build(location: folder_id, new_name: actual_path).bind do |input_data|
         @commands[:rename_file].call(auth_strategy:, input_data:).or do |error|
-          log_adapter_error(error, folder_id:, folder_name: actual_path)
           add_error(
             :rename_project_folder, error,
             options: { current_path: current_folder_name, project_folder_name: actual_path, project_folder_id: folder_id }
@@ -160,7 +156,6 @@ module Storages
       end
 
       folder_info = @commands[:create_folder].call(auth_strategy:, input_data:).value_or do |error|
-        log_adapter_error(error, folder_name:)
         return add_error(:create_folder, error, options: { folder_name:, parent_location: "/" })
       end
 
@@ -188,7 +183,6 @@ module Storages
       end
 
       file_list = @commands[:files].call(auth_strategy:, input_data:).value_or do |error|
-        log_adapter_error(error, { drive_id: })
         add_error(:remote_folders, error, options: { drive_id: })
         return Failure()
       end

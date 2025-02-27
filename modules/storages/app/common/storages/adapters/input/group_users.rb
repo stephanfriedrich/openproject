@@ -35,7 +35,7 @@ module Storages
         private_class_method :new
 
         def self.build(group:, contract: GroupUsersContract.new)
-          contract.call(group:).to_monad.fmap { new(**_1.to_h) }
+          contract.call(group:).to_monad.fmap { new(**it.to_h) }
         end
       end
     end

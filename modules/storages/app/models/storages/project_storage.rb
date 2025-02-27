@@ -82,18 +82,16 @@ module Storages
     end
 
     def open(user)
-      auth_strategy = Peripherals::Registry.resolve("#{storage}.authentication.user_bound").call(user:, storage:)
+      auth_strategy = Adapters::Registry.resolve("#{storage}.authentication.user_bound").call(user:, storage:)
 
-      # FIXME: Those aren't real queries. They are at most services at worst something else - 2025-01-15 @mereghost
-      if project_folder_not_accessible?(user)
-        Peripherals::Registry
-          .resolve("#{storage}.queries.open_storage")
-          .call(storage:, auth_strategy:)
-      else
-        Peripherals::Registry
-          .resolve("#{storage}.queries.open_file_link")
-          .call(storage:, auth_strategy:, file_id: project_folder_id)
-      end
+      result = if project_folder_not_accessible?(user)
+                 open_storage_url(auth_strategy)
+               else
+                 open_file_link_url(auth_strategy)
+               end
+
+      result.either(->(success) { ServiceResult.success(result: success) },
+                    ->(failure) { ServiceResult.failure(errors: failure) })
     end
 
     def open_with_connection_ensured
@@ -119,8 +117,7 @@ module Storages
     end
 
     def managed_folder_identifier
-      @managed_folder_identifier ||=
-        Peripherals::Registry.resolve("#{storage}.models.managed_folder_identifier").new(self)
+      @managed_folder_identifier ||= Adapters::Registry.resolve("#{storage}.models.managed_folder_identifier").new(self)
     end
 
     def project_folder_not_accessible?(user)

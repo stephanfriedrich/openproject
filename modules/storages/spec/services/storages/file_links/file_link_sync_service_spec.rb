@@ -53,21 +53,21 @@ RSpec.describe Storages::FileLinkSyncService, type: :model do
       let(:file_link_one) { create(:file_link, origin_id: file_info.id, storage: storage_one, container: work_package) }
 
       before do
-        Storages::Peripherals::Registry
-          .stub("nextcloud.queries.files_info", ->(_) { ServiceResult.success(result: [file_info]) })
+        Storages::Adapters::Registry
+          .stub("nextcloud.queries.files_info", ->(_) { Success([file_info]) })
       end
 
       it "updates all origin_* fields" do
         expect(service.success).to be_truthy
-        expect(service.result.count).to be 1
-        expect(service.result.first).to be_a Storages::FileLink
+        expect(service.result.count).to eq(1)
+        expect(service.result.first).to be_a(Storages::FileLink)
 
-        expect(service.result.first.origin_id).to eql file_info.id
-        expect(service.result.first.origin_created_at).to eql file_info.created_at
-        expect(service.result.first.origin_updated_at).to eql file_info.last_modified_at
-        expect(service.result.first.origin_mime_type).to eql file_info.mime_type
-        expect(service.result.first.origin_name).to eql file_info.name
-        expect(service.result.first.origin_created_by_name).to eql file_info.owner_name
+        expect(service.result.first.origin_id).to eq file_info.id
+        expect(service.result.first.origin_created_at).to eq file_info.created_at
+        expect(service.result.first.origin_updated_at).to eq file_info.last_modified_at
+        expect(service.result.first.origin_mime_type).to eq file_info.mime_type
+        expect(service.result.first.origin_name).to eq file_info.name
+        expect(service.result.first.origin_created_by_name).to eq file_info.owner_name
       end
     end
 
@@ -76,13 +76,13 @@ RSpec.describe Storages::FileLinkSyncService, type: :model do
       let(:file_link_one) { create(:file_link, origin_id: file_info.id, storage: storage_one, container: work_package) }
 
       before do
-        Storages::Peripherals::Registry
-          .stub("nextcloud.queries.files_info", ->(_) { ServiceResult.success(result: [file_info]) })
+        Storages::Adapters::Registry
+          .stub("nextcloud.queries.files_info", ->(_) { Success([file_info]) })
       end
 
       it "returns a FileLink with #origin_status :not_allowed" do
         expect(service.success).to be_truthy
-        expect(service.result.first.origin_status).to be :view_not_allowed
+        expect(service.result.first.origin_status).to eq :view_not_allowed
       end
     end
 
@@ -96,18 +96,18 @@ RSpec.describe Storages::FileLinkSyncService, type: :model do
       let(:file_links) { [file_link_one, file_link_two] }
 
       before do
-        Storages::Peripherals::Registry
+        Storages::Adapters::Registry
           .stub("nextcloud.queries.files_info",
-                ->(_) { ServiceResult.success(result: [file_info_one, file_info_two]) })
+                ->(_) { Success([file_info_one, file_info_two]) })
       end
 
       it "returns a successful result with two file links with different permissions" do
         expect(service.success).to be_truthy
-        expect(service.result.count).to be 2
-        expect(service.result[0].origin_id).to eql file_info_one.id
-        expect(service.result[1].origin_id).to eql file_info_two.id
-        expect(service.result[0].origin_status).to be :view_allowed
-        expect(service.result[1].origin_status).to be :view_not_allowed
+        expect(service.result.count).to eq 2
+        expect(service.result[0].origin_id).to eq file_info_one.id
+        expect(service.result[1].origin_id).to eq file_info_two.id
+        expect(service.result[0].origin_status).to eq :view_allowed
+        expect(service.result[1].origin_status).to eq :view_not_allowed
       end
     end
 
@@ -116,15 +116,15 @@ RSpec.describe Storages::FileLinkSyncService, type: :model do
       let(:file_link_one) { create(:file_link, origin_id: file_info.id, storage: storage_one, container: work_package) }
 
       before do
-        Storages::Peripherals::Registry
-          .stub("nextcloud.queries.files_info", ->(_) { ServiceResult.success(result: [file_info]) })
+        Storages::Adapters::Registry
+          .stub("nextcloud.queries.files_info", ->(_) { Success([file_info]) })
       end
 
       it "returns the file link with a status set to :not_found" do
         expect(service.success).to be_truthy
-        expect(service.result.count).to be 1
-        expect(Storages::FileLink.count).to be 1
-        expect(service.result.first.origin_status).to be :not_found
+        expect(service.result.count).to eq 1
+        expect(Storages::FileLink.count).to eq 1
+        expect(service.result.first.origin_status).to eq :not_found
       end
     end
 
@@ -133,28 +133,28 @@ RSpec.describe Storages::FileLinkSyncService, type: :model do
       let(:file_link_one) { create(:file_link, origin_id: file_info.id, storage: storage_one, container: work_package) }
 
       before do
-        Storages::Peripherals::Registry
-          .stub("nextcloud.queries.files_info", ->(_) { ServiceResult.success(result: [file_info]) })
+        Storages::Adapters::Registry
+          .stub("nextcloud.queries.files_info", ->(_) { Success([file_info]) })
       end
 
       it "returns the file link with a status set to :error" do
         expect(service.success).to be_truthy
-        expect(service.result.count).to be 1
-        expect(Storages::FileLink.count).to be 1
-        expect(service.result.first.origin_status).to be :error
+        expect(service.result.count).to eq 1
+        expect(Storages::FileLink.count).to eq 1
+        expect(service.result.first.origin_status).to eq :error
       end
     end
 
     context "with files_info_query failing" do
       before do
-        Storages::Peripherals::Registry
+        Storages::Adapters::Registry
           .stub("nextcloud.queries.files_info",
-                ->(_) { ServiceResult.failure(result: :error, errors: Storages::StorageError.new(code: :error)) })
+                ->(_) { Failure(Storages::Adapters::Results::Error.new(code: :error, source: "Specs")) })
       end
 
       it "leaves the list of file_links unchanged with permissions = :error" do
         expect(service.success).to be_truthy
-        expect(service.result.first.origin_status).to be :error
+        expect(service.result.first.origin_status).to eq :error
       end
     end
   end

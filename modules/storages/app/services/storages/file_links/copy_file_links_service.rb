@@ -116,19 +116,20 @@ module Storages
       end
 
       def auth_strategy
-        Peripherals::Registry.resolve("#{@source.storage.short_provider_type}.authentication.userless").call
+        Adapters::Registry.resolve("#{@source.storage}.authentication.userless").call
       end
 
       def source_files_info(source_file_links)
-        Peripherals::Registry
-          .resolve("#{@source.storage.short_provider_type}.queries.files_info")
+        Adapters::Registry
+          .resolve("#{@source.storage}.queries.files_info")
           .call(storage: @source.storage, auth_strategy:, file_ids: source_file_links.pluck(:origin_id))
       end
 
       def target_files_map
-        Peripherals::Registry
-          .resolve("#{@target.storage.short_provider_type}.queries.file_path_to_id_map")
-          .call(storage: @target.storage, auth_strategy:, folder: Peripherals::ParentFolder.new(@target.project_folder_location))
+        Adapters::Input::FilePathToIdMap.build(folder: @target.project_folder_location).bind do |input_data|
+          Adapters::Registry.resolve("#{@target.storage}.queries.file_path_to_id_map")
+                            .call(storage: @target.storage, auth_strategy:, input_data:)
+        end
       end
 
       def create_unmanaged_file_links(source_file_links)

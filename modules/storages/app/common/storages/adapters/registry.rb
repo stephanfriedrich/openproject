@@ -38,13 +38,7 @@ module Storages
       # Extracts the known_providers from the registered keys
       # @return [Array<String>]
       def self.known_providers
-        keys.map { _1.split(".").first }.uniq
-      end
-
-      namespace("one_drive") do
-        namespace("contracts") do
-          register(:storage, "Contract")
-        end
+        keys.map { it.split(".").first }.uniq
       end
 
       class Resolver < Dry::Container::Resolver

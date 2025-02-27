@@ -57,13 +57,12 @@ module Storages
 
         catch :failure do
           remote_folder_map.bind do |remote_folders|
-            prepare_root_folder(remote_folders["/#{group_folder}"].id).bind do
-              remote_folders.delete("/#{group_folder}")
-              ensure_folders_exist(remote_folders.invert).bind do
-                hide_inactive_folders(remote_folders.values.map(&:id)).bind do
-                  apply_permission_to_folders.bind { update_group }
-                end
-              end
+            root_folder = remote_folders.delete("/#{group_folder}")
+            prepare_root_folder(root_folder.id).bind do
+              ensure_folders_exist(remote_folders.invert).bind { hide_inactive_folders(remote_folders.values.map(&:id)) }
+
+              apply_permission_to_folders
+              update_group
             end
           end
         end
@@ -162,7 +161,7 @@ module Storages
     def add_users_to_group(users)
       users.each do |user|
         Adapters::Input::AddUserToGroup.build(group:, user:).bind do |input_data|
-          @commands[:add_user_to_group].call(auth_strategy:, input_data:).or { log_adapter_error(_1) }
+          @commands[:add_user_to_group].call(auth_strategy:, input_data:).or { log_adapter_error(it) }
         end
       end
     end
@@ -220,7 +219,7 @@ module Storages
     def remove_users_from_group(users)
       users.each do |user|
         Adapters::Input::RemoveUserFromGroup.build(group:, user:).bind do |input_data|
-          @commands[:remove_user_from_group].call(auth_strategy:, input_data:).or { log_adapter_error(_1) }
+          @commands[:remove_user_from_group].call(auth_strategy:, input_data:).or { log_adapter_error(it) }
         end
       end
     end
@@ -237,7 +236,7 @@ module Storages
 
     def set_permissions_on_folder(file_id, user_permissions)
       Adapters::Input::SetPermissions.build(file_id:, user_permissions:).bind do |input_data|
-        @commands[:set_permissions].call(auth_strategy:, input_data:).or { log_adapter_error(_1) }
+        @commands[:set_permissions].call(auth_strategy:, input_data:).or { log_adapter_error(it) }
       end
     end
 

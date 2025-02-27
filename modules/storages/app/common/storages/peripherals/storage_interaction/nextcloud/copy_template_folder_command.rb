@@ -49,13 +49,13 @@ module Storages
           def call(auth_strategy:, source_path:, destination_path:)
             with_tagged_logger do
               Authentication[auth_strategy].call(storage: @storage) do |http|
-                valid_input_result = validate_inputs(source_path, destination_path).on_failure { return _1 }
+                valid_input_result = validate_inputs(source_path, destination_path).on_failure { return it }
 
                 remote_urls = build_origin_urls(**valid_input_result.result)
 
-                ensure_remote_folder_does_not_exist(http, remote_urls[:destination_url]).on_failure { return _1 }
+                ensure_remote_folder_does_not_exist(http, remote_urls[:destination_url]).on_failure { return it }
 
-                copy_folder(http, **remote_urls).on_failure { return _1 }
+                copy_folder(http, **remote_urls).on_failure { return it }
 
                 get_folder_id(auth_strategy, valid_input_result.result[:destination_path])
               end

@@ -42,10 +42,10 @@ module Storages
           end
 
           def call(auth_strategy:, folder:)
-            validate_input_data(folder).on_failure { return _1 }
+            validate_input_data(folder).on_failure { return it }
 
             origin_user = Util.origin_user_id(caller: self.class, storage: @storage, auth_strategy:)
-                              .on_failure { return _1 }
+                              .on_failure { return it }
                               .result
 
             @location_prefix = CGI.unescape UrlBuilder.path(@storage.uri.path, "remote.php/dav/files", origin_user)

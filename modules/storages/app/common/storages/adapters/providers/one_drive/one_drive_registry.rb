@@ -39,17 +39,29 @@ module Storages
           end
 
           namespace(:commands) do
+            register(:copy_template_folder, Commands::CopyTemplateFolderCommand)
             register(:create_folder, Commands::CreateFolderCommand)
             register(:delete_folder, Commands::DeleteFolderCommand)
             register(:rename_file, Commands::RenameFileCommand)
             register(:set_permissions, Commands::SetPermissionsCommand)
           end
 
+          namespace("contracts") do
+            register(:storage, OneDriveContract)
+          end
+
+          namespace("models") do
+            register(:managed_folder_identifier, ManagedFolderIdentifier)
+          end
+
           namespace(:queries) do
-            register(:auth_check, Queries::AuthCheckQuery)
+            # register(:auth_check, Queries::AuthCheckQuery)
             register(:file_info, Queries::FileInfoQuery)
             register(:file_path_to_id_map, Queries::FilePathToIdMapQuery)
             register(:files, Queries::FilesQuery)
+            register(:files_info, Queries::FilesInfoQuery)
+            register(:open_file_link, Queries::OpenFileLinkQuery)
+            register(:open_storage, Queries::OpenStorageQuery)
             register(:upload_link, Queries::UploadLinkQuery)
           end
         end

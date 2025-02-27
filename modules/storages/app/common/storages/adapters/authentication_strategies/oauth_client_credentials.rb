@@ -39,12 +39,12 @@ module Storages
         end
 
         def call(storage:, http_options: {})
-          config = validate_configuration(storage).value_or { return Failure(_1) }
+          config = validate_configuration(storage).value_or { return Failure(it) }
 
           token_cache_key = TOKEN_CACHE_KEY % storage.id
           access_token = @use_cache ? Rails.cache.read(token_cache_key) : nil
 
-          http = build_http_session(access_token, config, http_options).value_or { return Failure(_1) }
+          http = build_http_session(access_token, config, http_options).value_or { return Failure(it) }
 
           operation_result = yield http
 

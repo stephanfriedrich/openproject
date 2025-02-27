@@ -30,8 +30,6 @@
 
 module Storages
   class FileLinkSyncService < BaseService
-    using Peripherals::ServiceResultRefinements
-
     def initialize(user:)
       super()
       @user = user
@@ -41,14 +39,8 @@ module Storages
       with_tagged_logger do
         info "Starting File Link remote synchronization"
 
-        resulting_file_links = file_links
-                               .group_by(&:storage_id)
-                               .map { |storage_id, storage_file_links| sync_storage_data(storage_id, storage_file_links) }
-                               .reduce([]) do |state, sync_result|
-          sync_result.match(
-            on_success: ->(sr) { state + sr },
-            on_failure: ->(_) { state }
-          )
+        resulting_file_links = file_links.group_by(&:storage_id).flat_map do |storage_id, records|
+          sync_storage_data(Storage.find(storage_id), records)
         end
 
         @result.result = resulting_file_links
@@ -59,58 +51,51 @@ module Storages
 
     private
 
-    def sync_storage_data(storage_id, file_links)
-      storage = Storage.find(storage_id)
-
+    def sync_storage_data(storage, file_links)
       info "Retrieving file link information from #{storage.name}"
-      Peripherals::Registry
-        .resolve("#{storage}.queries.files_info")
-        .call(storage:, auth_strategy: strategy(storage), file_ids: file_links.map(&:origin_id))
-        .map { |file_infos| to_hash(file_infos) }
-        .match(
-          on_success: set_file_link_status(file_links),
-          on_failure: lambda { |_|
-            ServiceResult.success(result: file_links.map do |file_link|
-              file_link.origin_status = :error
-              file_link
-            end)
-          }
-        )
+
+      input_data = Adapters::Input::FilesInfo.build(file_ids: file_links.map(&:origin_id)).value_or do
+        log_validation_error(it)
+        return set_error_status(file_links)
+      end
+
+      infos = Adapters::Registry.resolve("#{storage}.queries.files_info")
+                                .call(storage:, auth_strategy: auth_strategy(storage), input_data:)
+
+      infos.either(->(success) { set_file_link_status(file_links, success) }, ->(*) { set_error_status(file_links) })
     end
 
-    def strategy(storage)
-      Peripherals::Registry.resolve("#{storage}.authentication.user_bound").call(user: @user, storage:)
+    def set_error_status(file_links)
+      file_links.map do |file_link|
+        file_link.origin_status = :error
+        file_link
+      end
     end
 
-    def to_hash(file_infos)
-      file_infos.index_by { |file_info| file_info.id.to_s }.to_h
+    def auth_strategy(storage)
+      Adapters::Registry.resolve("#{storage}.authentication.user_bound").call(@user)
     end
 
-    def set_file_link_status(file_links)
+    def set_file_link_status(file_links, file_infos)
       info "Updating file link status..."
-      lambda do |file_infos|
-        resulting_file_links = []
+      indexed = file_infos.to_h { [it.id, it] }
 
-        file_links.each do |file_link|
-          file_info = file_infos[file_link.origin_id]
+      file_links.map do |file_link|
+        file_info = indexed[file_link.origin_id]
+        file_link.origin_status = case file_info.status_code
+                                  when 200
+                                    update_file_link(file_link, file_info)
+                                    :view_allowed
+                                  when 403
+                                    :view_not_allowed
+                                  when 404
+                                    :not_found
+                                  else
+                                    :error
+                                  end
 
-          file_link.origin_status = case file_info.status_code
-                                    when 200
-                                      update_file_link(file_link, file_info)
-                                      :view_allowed
-                                    when 403
-                                      :view_not_allowed
-                                    when 404
-                                      :not_found
-                                    else
-                                      :error
-                                    end
-
-          resulting_file_links << file_link
-          file_link.save
-        end
-
-        ServiceResult.success(result: resulting_file_links)
+        file_link.save
+        file_link
       end
     end
 

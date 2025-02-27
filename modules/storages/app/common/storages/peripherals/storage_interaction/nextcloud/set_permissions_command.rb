@@ -57,7 +57,7 @@ module Storages
           # rubocop:disable Metrics/AbcSize
           def call(auth_strategy:, input_data:)
             username = Util.origin_user_id(caller: self.class, storage: @storage, auth_strategy:)
-                           .on_failure { return _1 }
+                           .on_failure { return it }
                            .result
 
             permissions = parse_permission_mask(input_data.user_permissions)
@@ -66,7 +66,7 @@ module Storages
               with_tagged_logger do
                 info "Getting the folder information"
                 folder_info = FileInfoQuery.call(storage: @storage, auth_strategy:, file_id: input_data.file_id)
-                                           .on_failure { return _1 }
+                                           .on_failure { return it }
                                            .result
 
                 info "Setting permissions #{permissions.inspect} on #{folder_info.location}"

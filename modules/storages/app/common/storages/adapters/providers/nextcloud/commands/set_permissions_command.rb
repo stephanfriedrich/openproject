@@ -40,7 +40,7 @@ module Storages
 
             # rubocop:disable Metrics/AbcSize
             def call(auth_strategy:, input_data:)
-              username = origin_user_id(auth_strategy:).value_or { return Failure(_1) }
+              username = origin_user_id(auth_strategy:).value_or { return Failure(it) }
 
               permissions = parse_permission_mask(input_data.user_permissions)
 

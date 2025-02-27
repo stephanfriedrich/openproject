@@ -48,7 +48,7 @@ module Storages
       config.resolver = Resolver.new
     end
 
-    Registry.import NextcloudRegistry
-    Registry.import OneDriveRegistry
+    # Registry.import NextcloudRegistry
+    # Registry.import OneDriveRegistry
   end
 end

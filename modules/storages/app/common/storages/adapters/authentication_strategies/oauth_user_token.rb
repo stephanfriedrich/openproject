@@ -40,8 +40,8 @@ module Storages
 
         # rubocop:disable Metrics/AbcSize
         def call(storage:, http_options: {}, &)
-          oauth_client = validate_oauth_client(storage).value_or { return Failure(_1) }
-          token = current_token(oauth_client).value_or { return Failure(_1) }
+          oauth_client = validate_oauth_client(storage).value_or { return Failure(it) }
+          token = current_token(oauth_client).value_or { return Failure(it) }
 
           options = http_options.deep_merge(headers: { "Authorization" => "Bearer #{token.access_token}" })
 
@@ -72,7 +72,7 @@ module Storages
 
         def refresh_and_retry(storage, token, options, &)
           config = storage.oauth_configuration.to_httpx_oauth_config.to_h
-          refreshed_session = refresh_token(config, options, token).value_or { return Failure(_1) }
+          refreshed_session = refresh_token(config, options, token).value_or { return Failure(it) }
           update_token(token, refreshed_session)
 
           yield refreshed_session

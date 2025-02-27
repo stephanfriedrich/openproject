@@ -40,6 +40,7 @@ module Storages
 
           namespace("commands") do
             register(:add_user_to_group, Commands::AddUserToGroupCommand)
+            register(:copy_template_folder, Commands::CopyTemplateFolderCommand)
             register(:create_folder, Commands::CreateFolderCommand)
             register(:delete_folder, Commands::DeleteFolderCommand)
             register(:remove_user_from_group, Commands::RemoveUserFromGroupCommand)
@@ -47,12 +48,23 @@ module Storages
             register(:set_permissions, Commands::SetPermissionsCommand)
           end
 
+          namespace("contracts") do
+            register(:storage, NextcloudContract)
+          end
+
+          namespace("models") do
+            register(:managed_folder_identifier, ManagedFolderIdentifier)
+          end
+
           namespace("queries") do
-            register(:auth_check, Queries::AuthCheckQuery)
+            # register(:auth_check, Queries::AuthCheckQuery)
             register(:file_info, Queries::FileInfoQuery)
             register(:file_path_to_id_map, Queries::FilePathToIdMapQuery)
             register(:files, Queries::FilesQuery)
+            register(:files_info, Queries::FilesInfoQuery)
             register(:group_users, Queries::GroupUsersQuery)
+            register(:open_file_link, Queries::OpenFileLinkQuery)
+            register(:open_storage, Queries::OpenStorageQuery)
             register(:upload_link, Queries::UploadLinkQuery)
           end
         end

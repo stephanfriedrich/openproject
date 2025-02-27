@@ -56,9 +56,8 @@ module Storages
     private
 
     def initiate_copy(target)
-      ProjectStorages::CopyProjectFoldersService
-        .call(source: @source, target:)
-        .on_success { |success| prepare_polling(success.result) }
+      ProjectStorages::CopyProjectFoldersService.call(source: @source, target:)
+                                                .on_success { |success| prepare_polling(success.result) }
     end
 
     def prepare_polling(result)
@@ -80,7 +79,7 @@ module Storages
         polling_info[:polling_state] = :completed
         batch.save
 
-        result = Peripherals::StorageInteraction::ResultData::CopyTemplateFolder.new(response[:resourceId], nil, false)
+        result = Adapters::Results::CopyTemplateFolder.new(response[:resourceId], nil, false)
         ServiceResult.success(result:)
       else
         raise(Errors::PollingRequired, "#{job_id} Polling not completed yet")

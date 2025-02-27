@@ -386,6 +386,7 @@ module Storages
             expect(Rails.logger)
               .to have_received(:error)
                     .with(folder_name: "[Sample] Project Name _ Ehuu (#{project.id})",
+                          parent_location: "/",
                           error_code: :conflict,
                           data: { body: /nameAlreadyExists/, status: 409 })
           ensure
@@ -407,8 +408,9 @@ module Storages
                                      project_folder_name: project_storage.managed_project_folder_path))
 
             expect(Rails.logger)
-              .to have_received(:error).with(folder_id: project_storage.project_folder_id,
-                                             folder_name: "[Sample] Project Name _ Ehuu (#{project.id})",
+              .to have_received(:error).with(project_folder_id: project_storage.project_folder_id,
+                                             project_folder_name: "[Sample] Project Name _ Ehuu (#{project.id})",
+                                             current_path: original_folder.name,
                                              error_code: :conflict,
                                              data: { body: /nameAlreadyExists/, status: 409 })
           ensure

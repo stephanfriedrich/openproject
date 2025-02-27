@@ -48,7 +48,7 @@ module Storages
           def call(auth_strategy:, folder:)
             with_tagged_logger do
               info "Getting data on all files under folder '#{folder}' using #{auth_strategy.key}"
-              validate_input_data(folder).on_failure { return _1 }
+              validate_input_data(folder).on_failure { return it }
 
               Authentication[auth_strategy].call(storage: @storage) do |http|
                 response = handle_response(http.get(children_url_for(folder) + FIELDS), :value)

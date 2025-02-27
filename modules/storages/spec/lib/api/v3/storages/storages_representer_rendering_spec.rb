@@ -180,7 +180,7 @@ RSpec.describe API::V3::Storages::StorageRepresenter, "rendering" do
 
           expect(generated).to have_json_size(2).at_path("_links/prepareUpload")
 
-          project_ids = JSON.parse(generated).dig("_links", "prepareUpload").map { _1.dig("payload", "projectId") }
+          project_ids = JSON.parse(generated).dig("_links", "prepareUpload").map { it.dig("payload", "projectId") }
           expect(project_ids)
             .to contain_exactly(project_linked_with_upload_permission.id, another_project_linked_with_upload_permission.id)
         end

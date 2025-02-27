@@ -36,7 +36,7 @@ RSpec::Matchers.define_negated_matcher :not_change, :change
 module Storages
   FakeProject = Data.define(:id, :name)
 
-  class TestIdentifier < Peripherals::ManagedFolderIdentifier::Nextcloud
+  class TestIdentifier < Adapters::Providers::Nextcloud::ManagedFolderIdentifier
     def initialize(project_storage)
       super
       @project = FakeProject.new(-273, project_storage.project.name)
@@ -116,7 +116,7 @@ module Storages
 
     describe "#call" do
       before do
-        Peripherals::Registry.stub("nextcloud.models.managed_folder_identifier", TestIdentifier)
+        Adapters::Registry.stub("nextcloud.models.managed_folder_identifier", TestIdentifier)
       end
 
       after { delete_created_folders }

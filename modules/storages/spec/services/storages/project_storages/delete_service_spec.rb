@@ -35,10 +35,10 @@ require_relative "shared_event_gun_examples"
 
 RSpec.describe Storages::ProjectStorages::DeleteService, :webmock, type: :model do
   shared_examples_for "deleting project storages with project folders" do
-    let(:command_double) { class_double(command_class_reference, call: ServiceResult.success) }
+    let(:command_double) { class_double(command_class_reference, call: Success()) }
 
     before do
-      Storages::Peripherals::Registry
+      Storages::Adapters::Registry
         .stub("#{storage}.commands.delete_folder", command_double)
     end
 
@@ -53,7 +53,8 @@ RSpec.describe Storages::ProjectStorages::DeleteService, :webmock, type: :model 
       end
 
       context "if project folder deletion request fails" do
-        let(:command_double) { class_double(command_class_reference, call: ServiceResult.failure(result: 404)) }
+        let(:error) { Storages::Adapters::Results::Error.new(code: :conflict, source: command_class_reference) }
+        let(:command_double) { class_double(command_class_reference, call: Failure(error)) }
 
         it "tries to remove the project folder at the remote storage and still succeed with deletion" do
           expect(described_class.new(model: project_storage, user:).call).to be_success
@@ -131,10 +132,8 @@ RSpec.describe Storages::ProjectStorages::DeleteService, :webmock, type: :model 
     end
 
     before do
-      Storages::Peripherals::Registry.stub(
-        "#{model_instance.storage.short_provider_type}.commands.delete_folder",
-        ->(*) { ServiceResult.success }
-      )
+      Storages::Adapters::Registry.stub("#{model_instance.storage}.commands.delete_folder",
+                                        ->(*) { Success() })
     end
 
     it_behaves_like("an event gun", OpenProject::Events::PROJECT_STORAGE_DESTROYED)
@@ -143,10 +142,6 @@ RSpec.describe Storages::ProjectStorages::DeleteService, :webmock, type: :model 
   private
 
   def command_class_reference
-    if storage.provider_type_nextcloud?
-      Storages::Peripherals::StorageInteraction::Nextcloud::DeleteFolderCommand
-    else
-      Storages::Peripherals::StorageInteraction::OneDrive::DeleteFolderCommand
-    end
+    Storages::Adapters::Registry["#{project_storage.storage}.commands.delete_folder"]
   end
 end

@@ -50,7 +50,7 @@ module Storages
           def call(auth_strategy:, folder:, depth:)
             Authentication[auth_strategy].call(storage: @storage) do |http|
               fetched_folder = fetch_folder(http, folder)
-                                 .on_failure { return _1 }
+                                 .on_failure { return it }
                                  .result
 
               file_ids_dictionary = fetched_folder

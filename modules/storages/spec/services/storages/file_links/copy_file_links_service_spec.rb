@@ -39,7 +39,7 @@ RSpec.describe Storages::FileLinks::CopyFileLinksService, :webmock do
   let(:source_wp) { create_list(:work_package, 5, project: source_storage.project) }
   let(:target_wp) { create_list(:work_package, 5, project: target_storage.project) }
 
-  let(:source_links) { source_wp.map { create(:file_link, container: _1, storage: source) } }
+  let(:source_links) { source_wp.map { create(:file_link, container: it, storage: source) } }
 
   # Caller is sending the ids as strings as they need to be serialized for the calling job.
   let(:wp_map) { source_wp.map(&:id).zip(target_wp.map(&:id)).to_h.stringify_keys }

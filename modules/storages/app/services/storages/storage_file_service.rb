@@ -38,7 +38,7 @@ module Storages
       auth_strategy = Adapters::Registry.resolve("#{storage}.authentication.user_bound").call(user)
 
       info "Requesting file #{file_id} information on #{storage.name}"
-      input_data = Adapters::Input::FileInfo.build(file_id:).value_or { return Failure(_1) }
+      input_data = Adapters::Input::FileInfo.build(file_id:).value_or { return Failure(it) }
 
       Adapters::Registry.resolve("#{storage}.queries.file_info").call(storage:, auth_strategy:, input_data:).either(
         ->(result) { ServiceResult.success(result:) },

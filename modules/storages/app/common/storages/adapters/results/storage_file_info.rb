@@ -68,7 +68,7 @@ module Storages
         end
 
         def self.build(contract: StorageFileInfoContract.new, **)
-          contract.call(**).to_monad.fmap { new(**_1.to_h) }
+          contract.call(**).to_monad.fmap { new(**it.to_h) }
         end
 
         def to_storage_file = StorageFile.build(**to_h)
