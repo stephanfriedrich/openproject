@@ -61,8 +61,8 @@ module Storages
             prepare_root_folder(root_folder.id).bind do
               ensure_folders_exist(remote_folders.invert).bind { hide_inactive_folders(remote_folders.values.map(&:id)) }
 
-              apply_permission_to_folders
               update_group
+              apply_permission_to_folders
             end
           end
         end
@@ -122,19 +122,6 @@ module Storages
     end
 
     def apply_permission_to_folders
-      info "Setting permissions to project folders"
-      remote_admins = admin_remote_identities_scope.pluck(:origin_user_id)
-
-      active_project_storages_scope
-        .where.not(project_folder_id: nil)
-        .order(:project_folder_id)
-        .find_each do |project_storage|
-        set_folder_permissions(remote_admins, project_storage)
-      end
-
-      info "Updating user access on automatically managed project folders"
-      add_remove_users_to_group(@storage.group, @storage.username)
-
       active_project_storages_scope.includes(:project).where.not(project_folder_id: nil).find_each do |project_storage|
         user_permissions = folder_admin_permissions + non_admin_permissions(project_storage)
         info "Setting permissions for #{project_storage.managed_project_folder_name}..."
@@ -261,7 +248,7 @@ module Storages
     end
 
     def admin_remote_identities_scope
-      remote_identities_scope.where(user: User.admin.active)
+      client_remote_identities_scope.where(user: User.admin.active)
     end
 
     #### ADAPTER COMMANDS/QUERIES

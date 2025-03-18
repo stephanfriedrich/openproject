@@ -90,7 +90,7 @@ module Storages::Storages
     end
 
     def default_provider_contract
-      ::Storages::Peripherals::Registry.resolve("#{model.short_provider_type}.contracts.storage")
+      ::Storages::Adapters::Registry.resolve("#{model.short_provider_type}.contracts.storage")
     end
   end
 end

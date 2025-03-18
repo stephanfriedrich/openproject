@@ -49,7 +49,7 @@ module Storages
           end
 
           namespace("contracts") do
-            register(:storage, NextcloudContract)
+            register(:storage, Contracts::StorageContract)
           end
 
           namespace("models") do

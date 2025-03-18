@@ -47,18 +47,20 @@ module Storages
     subject(:service) { described_class.new(storage) }
 
     shared_let(:storage) { create(:nextcloud_storage_with_local_connection, :as_automatically_managed) }
+    shared_let(:integration) { storage }
     shared_let(:oauth_client) { storage.oauth_client }
+    shared_let(:auth_source) { oauth_client }
     # USER FACTORIES
     shared_let(:admin) { create(:admin) }
-    shared_let(:admin_identity) { create(:remote_identity, user: admin, oauth_client:, origin_user_id: "anakin") }
+    shared_let(:admin_identity) { create(:remote_identity, user: admin, auth_source:, integration:, origin_user_id: "anakin") }
     shared_let(:single_project_user) { create(:user) }
     shared_let(:single_project_user_token) do
-      create(:remote_identity, user: single_project_user, oauth_client:, origin_user_id: "luke")
+      create(:remote_identity, user: single_project_user, auth_source:, integration:, origin_user_id: "luke")
     end
 
     shared_let(:multiple_projects_user) { create(:user) }
     shared_let(:multiple_project_user_token) do
-      create(:remote_identity, user: multiple_projects_user, oauth_client:, origin_user_id: "leia")
+      create(:remote_identity, user: multiple_projects_user, auth_source:, integration:, origin_user_id: "leia")
     end
 
     # ROLE FACTORIES

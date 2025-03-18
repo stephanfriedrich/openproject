@@ -128,7 +128,7 @@ module Storages
 
     def managed_folder_identifier
       @managed_folder_identifier ||=
-        Peripherals::Registry.resolve("#{storage}.models.managed_folder_identifier").new(self)
+        Adapters::Registry.resolve("#{storage}.models.managed_folder_identifier").new(self)
     end
 
     def project_folder_not_accessible?(user)
