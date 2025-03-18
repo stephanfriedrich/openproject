@@ -57,7 +57,7 @@ module Storages
               when :basic_auth
                 Success(@storage.username)
               when :oauth_user_token
-                remote_id = RemoteIdentity.of_user_and_client(strategy.user, @storage.oauth_client)
+                remote_id = RemoteIdentity.of_user_and_client(strategy.user, @storage.oauth_client, @storage)
                 if remote_id.present?
                   Success(remote_id.origin_user_id)
                 else

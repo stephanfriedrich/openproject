@@ -43,7 +43,7 @@ module Storages
                     FileInfoQuery.call(storage: @storage, auth_strategy:, input_data: file_data).value_or do |failure|
                       return failure if failure.source.module_parent == Authentication
 
-                      wrap_storage_file_error(input_data.file_id, failure)
+                      wrap_storage_file_error(file_data.file_id, failure)
                     end
                   end
                 end
