@@ -42,8 +42,8 @@ module Storages
 
             def initialize(*)
               super
-              @drive_item_query = DriveItemQuery.new(@storage)
-              @children_query = ChildrenQuery.new(@storage)
+              @drive_item_query = Internal::DriveItemQuery.new(@storage)
+              @children_query = Internal::ChildrenQuery.new(@storage)
             end
 
             def call(auth_strategy:, input_data:)

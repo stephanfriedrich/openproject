@@ -47,7 +47,7 @@ module Storages
             private
 
             def drive_item_query
-              @drive_item_query ||= DriveItemQuery.new(@storage)
+              @drive_item_query ||= Internal::DriveItemQuery.new(@storage)
             end
 
             def request_web_url(http, file_id)

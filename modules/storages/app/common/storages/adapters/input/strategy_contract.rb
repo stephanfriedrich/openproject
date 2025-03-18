@@ -36,6 +36,7 @@ module Storages
           # The included list need to be made dynamic
           required(:key).filled(:symbol, included_in?: %i[noop basic_auth oauth_client_credentials oauth_user_token])
           optional(:user).maybe(type?: User)
+          optional(:storage).maybe(type?: Storage)
           optional(:use_cache).maybe(:bool)
         end
       end

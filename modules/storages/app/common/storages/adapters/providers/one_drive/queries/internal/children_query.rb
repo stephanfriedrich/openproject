@@ -33,37 +33,39 @@ module Storages
     module Providers
       module OneDrive
         module Queries
-          class ChildrenQuery < Base
-            def call(http:, folder:, fields: [])
-              query = fields.empty? ? "" : "?$select=#{fields.join(',')}"
+          module Internal
+            class ChildrenQuery < Base
+              def call(http:, folder:, fields: [])
+                query = fields.empty? ? "" : "?$select=#{fields.join(',')}"
 
-              url = UrlBuilder.url(base_uri, uri_path_for(folder))
-              handle_responses(http.get(url + query))
-            end
-
-            private
-
-            def handle_responses(response)
-              error = Results::Error.new(source: self.class, payload: response)
-
-              case response
-              in { status: 200..299 }
-                Success(response.json(symbolize_keys: true).fetch(:value))
-              in { status: 404 }
-                Failure(error.with(code: :not_found))
-              in { status: 403 }
-                Failure(error.with(code: :forbidden))
-              in { status: 401 }
-                Failure(error.with(code: :unauthorized))
-              else
-                Failure(error.with(code: :error))
+                url = UrlBuilder.url(base_uri, uri_path_for(folder))
+                handle_responses(http.get(url + query))
               end
-            end
 
-            def uri_path_for(folder)
-              return "/root/children" if folder.root?
+              private
 
-              "/items/#{folder.path}/children"
+              def handle_responses(response)
+                error = Results::Error.new(source: self.class, payload: response)
+
+                case response
+                in { status: 200..299 }
+                  Success(response.json(symbolize_keys: true).fetch(:value))
+                in { status: 404 }
+                  Failure(error.with(code: :not_found))
+                in { status: 403 }
+                  Failure(error.with(code: :forbidden))
+                in { status: 401 }
+                  Failure(error.with(code: :unauthorized))
+                else
+                  Failure(error.with(code: :error))
+                end
+              end
+
+              def uri_path_for(folder)
+                return "/root/children" if folder.root?
+
+                "/items/#{folder.path}/children"
+              end
             end
           end
         end

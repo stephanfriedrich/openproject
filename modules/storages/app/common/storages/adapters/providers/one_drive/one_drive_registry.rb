@@ -35,7 +35,7 @@ module Storages
         OneDriveRegistry = Dry::Container::Namespace.new("one_drive") do
           namespace(:authentication) do
             register(:userless, ->(use_cache = true) { Input::Strategy.build(key: :oauth_client_credentials, use_cache:) })
-            register(:user_bound, ->(user) { Input::Strategy.build(key: :oauth_user_token, user:) })
+            register(:user_bound, ->(user, storage = nil) { Input::Strategy.build(key: :oauth_user_token, user:, storage:) })
           end
 
           namespace(:commands) do
@@ -63,6 +63,7 @@ module Storages
             register(:open_file_link, Queries::OpenFileLinkQuery)
             register(:open_storage, Queries::OpenStorageQuery)
             register(:upload_link, Queries::UploadLinkQuery)
+            register(:user, Queries::UserQuery)
           end
         end
       end

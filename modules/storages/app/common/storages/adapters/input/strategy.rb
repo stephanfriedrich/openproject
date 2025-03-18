@@ -31,11 +31,11 @@
 module Storages
   module Adapters
     module Input
-      Strategy = Data.define(:key, :user, :use_cache) do
+      Strategy = Data.define(:key, :user, :storage, :use_cache) do
         private_class_method :new
 
-        def self.build(key:, user: nil, use_cache: true, contract: StrategyContract.new)
-          contract.call(key:, user:, use_cache:).to_monad.fmap { |result| new(**result.to_h) }
+        def self.build(key:, user: nil, storage: nil, use_cache: true, contract: StrategyContract.new)
+          contract.call(key:, user:, use_cache:, storage:).to_monad.fmap { |result| new(**result.to_h) }
         end
 
         def with_user(user)

@@ -33,46 +33,32 @@ module Storages
     module Providers
       module OneDrive
         module Queries
-          class DriveItemQuery < Base
-            def call(http:, drive_item_id:, fields: [])
-              select_url_query = if fields.empty?
-                                   ""
-                                 else
-                                   "?$select=#{fields.join(',')}"
-                                 end
+          class UserQuery < Base
+            def self.call(storage:, auth_strategy:)
+              new(storage).call(auth_strategy:)
+            end
 
-              make_file_request(drive_item_id, http, select_url_query)
+            def call(auth_strategy:)
+              Authentication[auth_strategy].call(storage: @storage) do |http|
+                handle_response http.get(UrlBuilder.url(@storage.uri, "/v1.0/me"))
+              end
             end
 
             private
-
-            def make_file_request(drive_item_id, http, select_url_query)
-              url = UrlBuilder.url(base_uri, uri_path_for(drive_item_id))
-              handle_response http.get("#{url}#{select_url_query}")
-            end
 
             def handle_response(response)
               error = Results::Error.new(payload: response, source: self.class)
 
               case response
               in { status: 200..299 }
-                Success(response.json(symbolize_keys: true))
-              in { status: 404 }
-                Failure(error.with(code: :not_found))
-              in { status: 403 }
-                Failure(error.with(code: :forbidden))
+                # FIXME: Make this into a Result::RemoteUserId - 2025-03-18 @mereghost
+                Success(id: response.json["id"])
               in { status: 401 }
                 Failure(error.with(code: :unauthorized))
+              in { status: 403 }
+                Failure(error.with(code: :forbidden))
               else
                 Failure(error.with(code: :error))
-              end
-            end
-
-            def uri_path_for(file_id)
-              if file_id == "/"
-                "/root"
-              else
-                "/items/#{file_id}"
               end
             end
           end

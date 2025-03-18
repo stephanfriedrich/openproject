@@ -119,7 +119,7 @@ module Storages
 
             context "with not existent parent folder", vcr: "one_drive/file_path_to_id_map_query_invalid_parent" do
               let(:folder) { "/I/just/made/that/up" }
-              let(:error_source) { DriveItemQuery }
+              let(:error_source) { Internal::DriveItemQuery }
 
               it_behaves_like "adapter file_path_to_id_map_query: not found"
             end

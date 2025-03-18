@@ -122,7 +122,7 @@ module Storages
 
             context "with a not existing file id", vcr: "one_drive/file_info_query_not_found" do
               let(:file_id) { "not_existent" }
-              let(:error_source) { DriveItemQuery }
+              let(:error_source) { Internal::DriveItemQuery }
 
               it_behaves_like "adapter file_info_query: not found"
             end

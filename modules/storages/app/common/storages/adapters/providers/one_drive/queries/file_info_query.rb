@@ -62,7 +62,7 @@ module Storages
             def userless_strategy = Registry.resolve("one_drive.authentication.userless").call
 
             def drive_item_query
-              @drive_item_query ||= DriveItemQuery.new(@storage)
+              @drive_item_query ||= Internal::DriveItemQuery.new(@storage)
             end
 
             def storage_file_info(json, status: "ok", status_code: 200)

@@ -79,7 +79,7 @@ module Storages
                 it "must return not found" do
                   result = subject.call(auth_strategy:, input_data:)
                   expect(result).to be_failure
-                  expect(result.failure.source).to be(DriveItemQuery)
+                  expect(result.failure.source).to be(Internal::DriveItemQuery)
                   expect(result.failure.code).to eq(:not_found)
                 end
               end
