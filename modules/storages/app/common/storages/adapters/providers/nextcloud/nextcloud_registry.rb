@@ -35,7 +35,7 @@ module Storages
         NextcloudRegistry = Dry::Container::Namespace.new("nextcloud") do
           namespace("authentication") do
             register(:userless, ->(*) { Input::Strategy.build(key: :basic_auth) })
-            register(:user_bound, ->(user) { Input::Strategy.build(key: :oauth_user_token, user:) })
+            register(:user_bound, ->(user, storage = nil) { Input::Strategy.build(key: :oauth_user_token, user:, storage:) })
           end
 
           namespace("commands") do

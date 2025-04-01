@@ -46,6 +46,8 @@ class Storages::ProjectStoragesController < ApplicationController
       @storage = @object.storage
       # check if user "see" project_folder
       if @object.project_folder_id.present?
+        # FIXME: This is used as a check if the user has access to the folder and a valid token, service candidate?
+        #   - 2025-04-01 @mereghost
         Storages::Adapters::Input::FileInfo.build(file_id: @object.project_folder_id).bind do |input_data|
           Storages::Adapters::Registry.resolve("#{@storage}.queries.file_info")
           .call(storage: @storage, auth_strategy:, input_data:)
@@ -104,6 +106,8 @@ class Storages::ProjectStoragesController < ApplicationController
     end
   end
 
+  # FIXME: Review this case as needed or intended. The controller has way too much knowledge of commands / queries
+  #   and storage behaviour. Service extraction? - 2025-04-01 @mereghost
   def storage_fallback_url
     selector = Storages::Peripherals::StorageInteraction::AuthenticationMethodSelector.new(user: current_user, storage: @storage)
     if selector.sso?
@@ -111,13 +115,11 @@ class Storages::ProjectStoragesController < ApplicationController
       # to the storage and leave error handling up to storage. Ideally they will login to the storage and thus prevent
       # the same error in the future.
       # This would not work for OneDrive, but for OneDrive we don't have SSO (yet).
-      res = Storages::Adapters::Registry.resolve("#{@storage}.queries.open_file_link").call(
-        storage: @storage,
-        auth_strategy:,
-        file_id: @object.project_folder_id
-      )
-
-      res.or { |error| raise "Could not redirect SSO user to storage: #{error}" }
+      Storages::Adapters::Input::OpenFileLink.build(file_id: @object.project_folder_id).bind do |input_data|
+        Storages::Adapters::Registry.resolve("#{@storage}.queries.open_file_link")
+                                    .call(storage: @storage, auth_strategy:, input_data:)
+                                    .value_or { |error| raise "Could not redirect SSO user to storage: #{error}" }
+      end
     else
       oauth_clients_ensure_connection_url(
         oauth_client_id: @storage.oauth_client.client_id,
