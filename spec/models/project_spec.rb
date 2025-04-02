@@ -386,7 +386,7 @@ RSpec.describe Project do
       expect(subject).to have_many(:available_phases)
                     .class_name("Project::Phase")
                     .inverse_of(:project)
-                    .dependent(:destroy)
+                    .dependent(nil)
                     .order(position: :asc)
     end
 

@@ -90,8 +90,7 @@ class Project < ApplicationRecord
   has_many :available_phases,
            -> { visible.eager_load(:definition).order(position: :asc) },
            class_name: "Project::Phase",
-           inverse_of: :project,
-           dependent: :destroy
+           inverse_of: :project
 
   has_many :recurring_meetings, dependent: :destroy
 
