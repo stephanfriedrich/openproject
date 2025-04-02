@@ -34,11 +34,11 @@ class WorkPackages::ApplyWorkingDaysChangeJob < ApplicationJob
     total_limit: 1
   )
 
-  attr_accessor :previous_working_days, :previous_non_working_days
+  attr_reader :previous_working_days, :previous_non_working_days
 
   def perform(user_id:, previous_working_days:, previous_non_working_days:)
-    self.previous_working_days = previous_working_days
-    self.previous_non_working_days = previous_non_working_days
+    @previous_working_days = previous_working_days
+    @previous_non_working_days = previous_non_working_days
 
     user = User.find(user_id)
 
