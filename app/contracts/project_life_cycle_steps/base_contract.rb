@@ -31,10 +31,10 @@ module ProjectLifeCycleSteps
     attribute :start_date
     attribute :finish_date
 
-    validate :validate_edit_project_phase_permission
+    validate :validate_edit_project_phases_permission
 
-    def validate_edit_project_phase_permission
-      return if user.allowed_in_project?(:edit_project_phases, model.project)
+    def validate_edit_project_phases_permission
+      return if user.allowed_in_project?(:edit_project_phases, project)
 
       errors.add :base, :error_unauthorized
     end

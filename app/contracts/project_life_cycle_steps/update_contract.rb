@@ -28,5 +28,6 @@
 
 module ProjectLifeCycleSteps
   class UpdateContract < BaseContract
+    alias_method :project, :model
   end
 end

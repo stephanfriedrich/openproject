@@ -31,7 +31,7 @@
 require "spec_helper"
 require "contracts/shared/model_contract_shared_context"
 
-RSpec.describe ProjectLifeCycleSteps::BaseContract do
+RSpec.describe ProjectLifeCycleSteps::UpdateContract do
   include_context "ModelContract shared context"
 
   let(:contract) { described_class.new(phase, user) }
