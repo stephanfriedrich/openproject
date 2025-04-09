@@ -29,6 +29,7 @@
 FactoryBot.define do
   factory :project_phase_definition, class: "Project::PhaseDefinition" do
     sequence(:name) { |n| "Phase definition #{n}" }
+    sequence(:position)
 
     color
 
