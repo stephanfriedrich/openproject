@@ -84,6 +84,24 @@ RSpec.describe Project::Phase do
       expect(subject.start_date).to eq(Date.parse("2024-11-26"))
       expect(subject.finish_date).to eq(Date.parse("2024-11-26"))
     end
+
+    it "accepts a date range" do
+      subject.date_range = Date.parse("2024-12-26")..Date.parse("2024-12-27")
+      expect(subject.start_date).to eq(Date.parse("2024-12-26"))
+      expect(subject.finish_date).to eq(Date.parse("2024-12-27"))
+    end
+
+    it "errors on date range excluding end" do
+      expect do
+        subject.date_range = Date.parse("2024-12-26")...Date.parse("2024-12-27")
+      end.to raise_error(ArgumentError, "Only inclusive ranges expected")
+    end
+
+    it "accepts nil" do
+      subject.date_range = nil
+      expect(subject.start_date).to be_nil
+      expect(subject.finish_date).to be_nil
+    end
   end
 
   describe "#validate_date_range" do
