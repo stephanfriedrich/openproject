@@ -60,9 +60,21 @@ class Project::Phase < ApplicationRecord
     Day.working.from_range(from: start_date, to: finish_date).count
   end
 
-  def date_range=(param)
-    self.start_date, self.finish_date = param.split(" - ")
-    self.finish_date ||= start_date # Allow single dates as range
+  def date_range=(range)
+    case range
+    when String
+      self.start_date, self.finish_date = range.split(" - ")
+      self.finish_date ||= start_date # Allow single dates as range
+    when Range
+      fail ArgumentError, "Only inclusive ranges expected" if range.exclude_end?
+
+      self.start_date = range.begin
+      self.finish_date = range.end
+    when nil
+      self.start_date = self.finish_date = nil
+    else
+      fail ArgumentError, "Expected String, Range or nil"
+    end
   end
 
   def range_set?
