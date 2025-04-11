@@ -49,8 +49,8 @@ class Day < ApplicationRecord
     from = today.at_beginning_of_month
     to = today.next_month.at_end_of_month
     from_range(from:, to:)
-    .includes(:non_working_days)
-    .order("days.id")
+      .includes(:non_working_days)
+      .order("days.id")
   end
 
   def self.from_range(from:, to:)
@@ -61,20 +61,31 @@ class Day < ApplicationRecord
     from = from.to_date
     to = to.to_date
     <<~SQL.squish
-      (SELECT
-        to_char(dd, 'YYYYMMDD')::integer id,
-        date_trunc('day', dd)::date date,
-        extract(isodow from dd) day_of_week,
-        (COALESCE(POSITION(extract(isodow from dd)::text IN settings.value) > 0, TRUE)
-          AND non_working_days.id IS NULL)::bool working
-      FROM
-      generate_series( '#{from}'::timestamp,
+      (
+        SELECT
+          to_char(dd, 'YYYYMMDD')::integer id,
+          date_trunc('day', dd)::date date,
+          extract(isodow from dd) day_of_week,
+          (
+            COALESCE(
+              POSITION(
+                extract(isodow from dd)::text IN settings.value
+              ) > 0,
+              TRUE
+            )
+            AND
+            non_working_days.id IS NULL
+          )::bool working
+        FROM
+          generate_series(
+            '#{from}'::timestamp,
             '#{to}'::timestamp,
-            '1 day'::interval) dd
-      LEFT JOIN settings
-           ON settings.name = 'working_days'
-      LEFT JOIN non_working_days
-           ON dd = non_working_days.date
+            '1 day'::interval
+          ) dd
+        LEFT JOIN settings
+          ON settings.name = 'working_days'
+        LEFT JOIN non_working_days
+          ON dd = non_working_days.date
       ) days
     SQL
   end
