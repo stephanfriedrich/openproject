@@ -124,43 +124,4 @@ RSpec.describe Project::Phase do
       expect(subject.errors[:date_range]).to be_empty
     end
   end
-
-  describe "#working_days_count" do
-    it "returns nil if not_set? is true" do
-      allow(Day).to receive(:working)
-
-      subject.start_date = nil
-      subject.finish_date = nil
-
-      expect(subject.working_days_count).to be_nil
-      expect(Day).not_to have_received(:working)
-    end
-
-    it "returns the correct number of days if start_date and finish_date are the same" do
-      subject.start_date = Time.zone.today
-      subject.finish_date = Time.zone.today
-      expect(subject.working_days_count).to eq(1)
-    end
-
-    it "returns the correct number of days for a valid date range" do
-      subject.start_date = Date.parse("2024-11-25")
-      subject.finish_date = Date.parse("2024-11-27")
-      expect(subject.working_days_count).to eq(3)
-    end
-
-    it "calls the Day.working.from_range method with the right arguments" do
-      subject.start_date = Date.parse("2024-11-25")
-      subject.finish_date = Date.parse("2024-11-27")
-
-      allow(Day).to receive(:working).and_return(Day)
-      allow(Day).to receive(:from_range)
-                      .with(from: subject.start_date, to: subject.finish_date)
-                      .and_return([])
-
-      expect(subject.working_days_count).to eq(0)
-
-      expect(Day).to have_received(:working).with(no_args)
-      expect(Day).to have_received(:from_range).with(from: subject.start_date, to: subject.finish_date)
-    end
-  end
 end

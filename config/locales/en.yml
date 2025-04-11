@@ -460,7 +460,7 @@ en:
       work_package_priorities:
         new_label: "New priority"
   project_phase:
-    working_days_count:
+    duration:
       one: "Duration: %{count} working day"
       other: "Duration: %{count} working days"
   lists:
