@@ -36,6 +36,7 @@ FactoryBot.define do
 
     start_date { Date.current - 2.days }
     finish_date { Date.current + 2.days }
+    duration { 5 }
 
     trait :skip_validate do
       to_create { |instance| instance.save(validate: false) }

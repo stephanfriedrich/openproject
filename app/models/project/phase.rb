@@ -33,6 +33,7 @@ class Project::Phase < ApplicationRecord
              class_name: "Project::PhaseDefinition"
   has_many :work_packages, inverse_of: :project_phase, dependent: :nullify
 
+  validates :duration, presence: true, if: :range_set?
   validate :validate_date_range
 
   delegate :name,
@@ -52,12 +53,6 @@ class Project::Phase < ApplicationRecord
       allowed_projects = Project.allowed_to(user, :view_project_phases)
       active.where(project: allowed_projects)
     end
-  end
-
-  def working_days_count
-    return nil if not_set?
-
-    Day.working.from_range(from: start_date, to: finish_date).count
   end
 
   def date_range=(range)
