@@ -29,31 +29,26 @@
 class API::V3::FileLinks::FileLinksOpenAPI < API::OpenProjectAPI
   helpers Storages::Peripherals::StorageErrorHelper
 
-  using Storages::Peripherals::ServiceResultRefinements
-
   helpers do
     def auth_strategy
       storage = @file_link.storage
-      Storages::Peripherals::Registry.resolve("#{storage}.authentication.user_bound").call(user: current_user, storage:)
+      Storages::Adapters::Registry.resolve("#{storage}.authentication.user_bound").call(user: current_user, storage:)
     end
   end
 
   resources :open do
     get do
-      Storages::Peripherals::Registry
-        .resolve("#{@file_link.storage}.queries.open_file_link")
-        .call(
-          storage: @file_link.storage,
-          auth_strategy:,
-          file_id: @file_link.origin_id,
-          open_location: ActiveModel::Type::Boolean.new.cast(params[:location])
-        )
-        .match(
-          on_success: ->(url) do
+      input_data = Storages::Adapters::Input::OpenFileLink.build(file_id: @file_link.origin_id, open_location: params[:location])
+                                                    .value_or { raise_error(it) }
+
+      Storages::Adapters::Registry.resolve("#{@file_link.storage}.queries.open_file_link")
+        .call(storage: @file_link.storage, auth_strategy:, input_data:)
+        .either(
+          ->(url) do
             redirect url, body: "The requested resource can be viewed at #{url}"
             status 303
           end,
-          on_failure: ->(error) { raise_error(error) }
+          ->(error) { raise_error(error) }
         )
     end
   end

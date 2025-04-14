@@ -35,22 +35,23 @@ class API::V3::FileLinks::FileLinksDownloadAPI < API::OpenProjectAPI
   helpers do
     def auth_strategy
       storage = @file_link.storage
-      Storages::Peripherals::Registry.resolve("#{storage}.authentication.user_bound").call(user: User.current, storage:)
+      Storages::Adapters::Registry.resolve("#{storage}.authentication.user_bound").call(user: User.current, storage:)
     end
   end
 
   resources :download do
     get do
-      Storages::Peripherals::Registry
-        .resolve("#{@file_link.storage}.queries.download_link")
-        .call(storage: @file_link.storage, auth_strategy:, file_link: @file_link)
-        .match(
-          on_success: ->(url) do
-            redirect(url, body: "The requested resource can be downloaded from #{url}")
-            status(303)
-          end,
-          on_failure: ->(error) { raise_error(error) }
-        )
+      Storages::Adapters::Input::DownloadLink.build(file_link: @file_link).bind do |input_data|
+        Storages::Adapters::Registry.resolve("#{@file_link.storage}.queries.download_link")
+          .call(storage: @file_link.storage, auth_strategy:, input_data:)
+          .either(
+            ->(url) do
+              redirect(url, body: "The requested resource can be downloaded from #{url}")
+              status(303)
+            end,
+            ->(error) { raise_error(error) }
+          )
+      end
     end
   end
 end

@@ -606,9 +606,9 @@ RSpec.describe "API v3 file links resource" do
 
     describe "with successful response" do
       before do
-        Storages::Peripherals::Registry.stub(
+        Storages::Adapters::Registry.stub(
           "nextcloud.queries.download_link",
-          ->(_) { ServiceResult.success(result: url) }
+          ->(_) { Success(url) }
         )
       end
 
@@ -622,9 +622,9 @@ RSpec.describe "API v3 file links resource" do
 
     describe "with query failed" do
       before do
-        Storages::Peripherals::Registry.stub(
+        Storages::Adapters::Registry.stub(
           "nextcloud.queries.download_link",
-          ->(_) { ServiceResult.failure(result: error, errors: Storages::StorageError.new(code: error)) }
+          ->(_) { Failure(Storages::Adapters::Results::Error.new(source: self, code: error)) }
         )
 
         get path

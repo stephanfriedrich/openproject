@@ -58,6 +58,7 @@ module Storages
 
           namespace("queries") do
             register(:auth_check, Queries::AuthCheckQuery)
+            register(:download_link, Queries::DownloadLinkQuery)
             register(:file_info, Queries::FileInfoQuery)
             register(:file_path_to_id_map, Queries::FilePathToIdMapQuery)
             register(:files, Queries::FilesQuery)
@@ -66,6 +67,7 @@ module Storages
             register(:open_file_link, Queries::OpenFileLinkQuery)
             register(:open_storage, Queries::OpenStorageQuery)
             register(:upload_link, Queries::UploadLinkQuery)
+            register(:user, Queries::UserQuery)
           end
         end
       end
