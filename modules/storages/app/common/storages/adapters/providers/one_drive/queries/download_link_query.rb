@@ -30,11 +30,39 @@
 
 module Storages
   module Adapters
-    module Input
-      class OpenFileLinkContract < Dry::Validation::Contract
-        params do
-          required(:file_id).filled(:string)
-          required(:open_location).maybe(:bool)
+    module Providers
+      module OneDrive
+        module Queries
+          class DownloadLinkQuery < Base
+            def call(auth_strategy:, input_data:)
+              Authentication[auth_strategy].call(storage: @storage) do |http|
+                handle_errors http.get(url_for(input_data.file_link.origin_id))
+              end
+            end
+
+            private
+
+            def handle_errors(response)
+              error = Results::Error.new(source: self.class, payload: response)
+
+              case response
+              in { status: 300..399 }
+                Success(URI(response.headers["Location"]))
+              in { status: 404 }
+                Failure(error.with(code: :not_found))
+              in { status: 403 }
+                Failure(error.with(code: :forbidden))
+              in { status: 401 }
+                Failure(error.with(code: :unauthorized))
+              else
+                Failure(error.with(code: :error))
+              end
+            end
+
+            def url_for(file_id)
+              UrlBuilder.url(base_uri, "items", file_id, "content")
+            end
+          end
         end
       end
     end

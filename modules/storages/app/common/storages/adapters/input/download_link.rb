@@ -31,10 +31,11 @@
 module Storages
   module Adapters
     module Input
-      class OpenFileLinkContract < Dry::Validation::Contract
-        params do
-          required(:file_id).filled(:string)
-          required(:open_location).maybe(:bool)
+      DownloadLink = Data.define(:file_link) do
+        private_class_method :new
+
+        def self.build(file_link:, contract: DownloadLinkContract.new)
+          contract.call(file_link:).to_monad.fmap { |it| new(**it.to_h) }
         end
       end
     end

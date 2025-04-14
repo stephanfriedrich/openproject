@@ -31,10 +31,9 @@
 module Storages
   module Adapters
     module Input
-      class OpenFileLinkContract < Dry::Validation::Contract
+      class DownloadLinkContract < Dry::Validation::Contract
         params do
-          required(:file_id).filled(:string)
-          required(:open_location).maybe(:bool)
+          required(:file_link).filled(type?: FileLink)
         end
       end
     end
