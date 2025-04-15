@@ -138,7 +138,7 @@ module Storages
 
                 command.call(auth_strategy:, input_data: input_data.with(folder_name: "Subfolder with File")).bind do |subfolder|
                   file_name = "files_query_root.yml"
-                  Input::UploadData.build(folder_id: subfolder.id, file_name:).bind do |upload_data|
+                  Input::UploadLink.build(folder_id: subfolder.id, file_name:).bind do |upload_data|
                     Registry.resolve("one_drive.queries.upload_link")
                             .call(storage:, auth_strategy:, input_data: upload_data).bind do |upload_link|
                       path = Rails.root.join("modules/storages/spec/support/fixtures/vcr_cassettes/one_drive", file_name)

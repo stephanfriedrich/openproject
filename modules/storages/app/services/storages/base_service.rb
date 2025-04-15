@@ -56,6 +56,14 @@ module Storages
 
     private
 
+    def add_validation_error(validation_error, options: {})
+      log_validation_error(validation_error, options:)
+
+      @result.errors.add(:base, :invalid, **validation_error.to_h)
+      @result.success = false
+      @result
+    end
+
     # @param attribute [Symbol] attribute to which the error will be tied to
     # @param error [Storages::Adapters::Results::Error] An adapter error result
     # @param options [Hash{Symbol => Object}] optional extra parameters for the message generation
@@ -63,7 +71,7 @@ module Storages
     def add_error(attribute, error, options: {})
       log_adapter_error(error, options)
 
-      if %i[error unauthorized].include? error.code
+      if %i[error unauthorized not_found].include? error.code
         @result.errors.add(:base, error.code, **options)
       else
         @result.errors.add(attribute, error.code, **options)

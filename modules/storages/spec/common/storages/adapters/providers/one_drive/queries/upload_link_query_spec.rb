@@ -44,7 +44,7 @@ module Storages
 
             context "when requesting an upload link for an existing file", vcr: "one_drive/upload_link_success" do
               let(:input_data) do
-                Input::UploadData
+                Input::UploadLink
                   .build(folder_id: "01AZJL5PN6Y2GOVW7725BZO354PWSELRRZ", file_name: "DeathStart_blueprints.tiff").value!
               end
 
@@ -73,7 +73,7 @@ module Storages
 
             context "when requesting an upload link for a not existing file", vcr: "one_drive/upload_link_not_found" do
               let(:input_data) do
-                Input::UploadData
+                Input::UploadLink
                   .build(folder_id: "04AZJL5PN6Y2GOVW7725BZO354PWSELRRZ", file_name: "DeathStart_blueprints.tiff").value!
               end
 

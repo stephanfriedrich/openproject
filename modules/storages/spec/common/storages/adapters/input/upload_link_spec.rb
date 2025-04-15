@@ -31,12 +31,27 @@
 module Storages
   module Adapters
     module Input
-      # FIXME: This breaks convention. Should be UploadLink
-      UploadData = Data.define(:folder_id, :file_name) do
-        private_class_method :new
+      RSpec.describe UploadLink do
+        subject(:input) { described_class }
 
-        def self.build(folder_id:, file_name:, contract: UploadDataContract.new)
-          contract.call(folder_id:, file_name:).to_monad.fmap { |result| new(**result.to_h) }
+        describe ".new" do
+          it "discourages direct instantiation" do
+            expect { described_class.new(folder_id: "file_id", file_name: "name") }
+              .to raise_error(NoMethodError, /private method 'new'/)
+          end
+        end
+
+        describe ".build" do
+          it "creates a success result for valid input data" do
+            expect(input.build(folder_id: "ABDCE", file_name: "DeathStar")).to be_success
+          end
+
+          it "creates a failure result for invalid input data" do
+            expect(input.build(folder_id: "/", file_name: 1)).to be_failure
+            expect(input.build(folder_id: "/", file_name: "")).to be_failure
+            expect(input.build(folder_id: 1, file_name: "DeathStar")).to be_failure
+            expect(input.build(folder_id: "", file_name: "DeathStar")).to be_failure
+          end
         end
       end
     end

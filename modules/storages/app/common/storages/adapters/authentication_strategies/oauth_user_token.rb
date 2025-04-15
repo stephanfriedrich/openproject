@@ -33,6 +33,7 @@ module Storages
     module AuthenticationStrategies
       class OAuthUserToken < AuthenticationStrategy
         def initialize(user)
+          super()
           @user = user
           @retried = false
           @error_data = Results::Error.new(source: self.class, code: :error)

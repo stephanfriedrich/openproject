@@ -46,7 +46,7 @@ module Storages
 
         info "Upload data validated..."
         info "Requesting an upload link to #{@storage.name}"
-        upload_link = request_upload_link(auth_strategy(user), input).on_failure { return @result }.result
+        upload_link = request_upload_link(auth_strategy(user), input).value_or { return @result }
 
         @result.result = upload_link
         @result
@@ -55,18 +55,17 @@ module Storages
 
     private
 
-    def request_upload_link(auth_strategy, upload_data)
-      Peripherals::Registry.resolve("#{@storage}.queries.upload_link")
-                           .call(storage: @storage, auth_strategy:, upload_data:)
-                           .on_failure do |error|
-        add_error(:base, error.errors, options: { storage_name: @storage.name, folder: upload_data.folder_id })
-        log_storage_error(error.errors)
+    def request_upload_link(auth_strategy, input_data)
+      Adapters::Registry.resolve("#{@storage}.queries.upload_link")
+                           .call(storage: @storage, auth_strategy:, input_data:)
+                           .alt_map do |error|
+        add_error(:base, error, options: { storage_name: @storage.name, folder: input_data.folder_id })
         @result.success = false
       end
     end
 
     def validate_input(...)
-      Peripherals::StorageInteraction::Inputs::UploadData.build(...).alt_map do |failure|
+      Adapters::Input::UploadLink.build(...).alt_map do |failure|
         error failure.inspect
         @result.add_error(:base, :invalid, options: failure.to_h)
         @result.success = false
@@ -74,7 +73,7 @@ module Storages
     end
 
     def auth_strategy(user)
-      Peripherals::Registry.resolve("#{@storage}.authentication.user_bound").call(user:, storage: @storage)
+      Adapters::Registry.resolve("#{@storage}.authentication.user_bound").call(user, @storage)
     end
   end
 end

@@ -47,7 +47,7 @@ module Storages
 
             context "when requesting an upload link for an existing file", vcr: "nextcloud/upload_link_success" do
               let(:input_data) do
-                Input::UploadData.build(folder_id: "169", file_name: "DeathStart_blueprints.tiff").value!
+                Input::UploadLink.build(folder_id: "169", file_name: "DeathStart_blueprints.tiff").value!
               end
 
               let(:token) { "SrQJeC5zM3B5Gw64d7dEQFQpFw8YBAtZWoxeLb59AR7PpGPyoGAkAko5G6ZiZ2HA" }
@@ -59,7 +59,7 @@ module Storages
 
             context "when requesting an upload link for a not existing file", vcr: "nextcloud/upload_link_not_found" do
               let(:input_data) do
-                Input::UploadData.build(folder_id: "1337", file_name: "DeathStart_blueprints.tiff").value!
+                Input::UploadLink.build(folder_id: "1337", file_name: "DeathStart_blueprints.tiff").value!
               end
 
               let(:error_source) { described_class }

@@ -38,8 +38,8 @@ module Storages::Peripherals
     end
 
     def handle_base_errors(errors)
-      base_errors = errors.symbols_for(:base)
-      message = errors.full_messages_for(:base)&.first
+      base_errors = errors.symbols_for(:base).to_set
+      message = error_message_for(errors)
 
       if base_errors.include? :not_found
         fail API::Errors::OutboundRequestNotFound.new(message)
@@ -52,6 +52,12 @@ module Storages::Peripherals
       else
         base_errors
       end
+    end
+
+    def error_message_for(error, attr = :base)
+      error.full_messages_for(attr)&.first
+    rescue I18n::MissingTranslationData
+      nil
     end
 
     def raise_error(error)

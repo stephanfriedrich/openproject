@@ -38,12 +38,21 @@ module Storages
       auth_strategy = Adapters::Registry.resolve("#{storage}.authentication.user_bound").call(user)
 
       info "Requesting file #{file_id} information on #{storage.name}"
-      input_data = Adapters::Input::FileInfo.build(file_id:).value_or { return Failure(it) }
+      input_data = Adapters::Input::FileInfo.build(file_id:).value_or do
+        add_validation_error(it)
+        return @result
+      end
 
-      Adapters::Registry.resolve("#{storage}.queries.file_info").call(storage:, auth_strategy:, input_data:).either(
-        ->(result) { ServiceResult.success(result:) },
-        ->(failure) { ServiceResult.failure(errors: failure) }
-      )
+      file_info = Adapters::Registry.resolve("#{storage}.queries.file_info")
+                                    .call(storage:, auth_strategy:, input_data:)
+                                    .value_or do
+        add_error(:base, it, options: { file_id: })
+
+        return @result
+      end
+
+      @result.result = file_info
+      @result
     end
   end
 end

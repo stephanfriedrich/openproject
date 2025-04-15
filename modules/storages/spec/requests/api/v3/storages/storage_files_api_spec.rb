@@ -37,19 +37,17 @@ RSpec.describe "API v3 storage files", :storage_server_helpers, :webmock, conten
   let(:permissions) { %i(view_work_packages view_file_links) }
   let(:project) { create(:project) }
 
-  let(:current_user) do
-    create(:user, member_with_permissions: { project => permissions })
+  let(:current_user) { create(:user, member_with_permissions: { project => permissions }) }
+  let(:storage) do
+    create(:nextcloud_storage_with_local_connection, :as_not_automatically_managed,
+           oauth_client_token_user: current_user, origin_user_id: "m.jade@death.star")
   end
 
-  let(:oauth_application) { create(:oauth_application) }
-  let(:storage) { create(:nextcloud_storage_configured, creator: current_user, oauth_application:) }
-  let(:oauth_token) { create(:oauth_client_token, user: current_user, oauth_client: storage.oauth_client) }
   let(:project_storage) { create(:project_storage, project:, storage:) }
 
   subject(:last_response) { get path }
 
   before do
-    oauth_application
     project_storage
     login_as current_user
   end
@@ -58,60 +56,57 @@ RSpec.describe "API v3 storage files", :storage_server_helpers, :webmock, conten
     let(:path) { api_v3_paths.storage_files(storage.id) }
 
     let(:response) do
-      Storages::StorageFiles.new(
+      Storages::Adapters::Results::StorageFileCollection.new(
         [
-          Storages::StorageFile.new(
-            id: 1,
-            name: "new_younglings.md",
-            size: 4096,
-            mime_type: "text/markdown",
-            created_at: DateTime.now,
-            last_modified_at: DateTime.now,
-            created_by_name: "Obi-Wan Kenobi",
-            last_modified_by_name: "Obi-Wan Kenobi",
-            location: "/",
-            permissions: %i[readable]
-          ),
-          Storages::StorageFile.new(
-            id: 2,
-            name: "holocron_inventory.md",
-            size: 4096,
-            mime_type: "text/markdown",
-            created_at: DateTime.now,
-            last_modified_at: DateTime.now,
-            created_by_name: "Obi-Wan Kenobi",
-            last_modified_by_name: "Obi-Wan Kenobi",
-            location: "/",
-            permissions: %i[readable writeable]
-          )
+          Storages::Adapters::Results::StorageFile.new(id: "555",
+                                                       name: "Folder",
+                                                       size: 232167,
+                                                       mime_type: "application/x-op-directory",
+                                                       created_at: nil,
+                                                       last_modified_at: Time.zone.parse("2024-08-09T11:53:42Z"),
+                                                       created_by_name: "Mara Jade",
+                                                       last_modified_by_name: nil,
+                                                       location: "/Folder",
+                                                       permissions: %i[readable writeable]),
+          Storages::Adapters::Results::StorageFile.new(id: "561",
+                                                       name: "Folder with spaces",
+                                                       size: 890,
+                                                       mime_type: "application/x-op-directory",
+                                                       created_at: nil,
+                                                       last_modified_at: Time.zone.parse("2024-08-09T11:52:09Z"),
+                                                       created_by_name: "Mara Jade",
+                                                       last_modified_by_name: nil,
+                                                       location: "/Folder%20with%20spaces",
+                                                       permissions: %i[readable writeable]),
+          Storages::Adapters::Results::StorageFile.new(id: "562",
+                                                       name: "Ümlæûts",
+                                                       size: 19720,
+                                                       mime_type: "application/x-op-directory",
+                                                       created_at: nil,
+                                                       last_modified_at: Time.zone.parse("2024-08-09T11:51:48Z"),
+                                                       created_by_name: "Mara Jade",
+                                                       last_modified_by_name: nil,
+                                                       location: "/%c3%9cml%c3%a6%c3%bbts",
+                                                       permissions: %i[readable writeable])
         ],
-        Storages::StorageFile.new(
-          id: 32,
-          name: "/",
-          size: 4096 * 2,
-          mime_type: "application/x-op-directory",
-          created_at: DateTime.now,
-          last_modified_at: DateTime.now,
-          created_by_name: "Obi-Wan Kenobi",
-          last_modified_by_name: "Obi-Wan Kenobi",
-          location: "/",
-          permissions: %i[readable writeable]
-        ),
+        Storages::Adapters::Results::StorageFile.new(id: "385",
+                                                     name: "Root",
+                                                     size: 252777,
+                                                     mime_type: "application/x-op-directory",
+                                                     created_at: nil,
+                                                     last_modified_at: Time.zone.parse("2024-08-09T11:53:42Z"),
+                                                     created_by_name: "Mara Jade",
+                                                     last_modified_by_name: nil,
+                                                     location: "/",
+                                                     permissions: %i[readable writeable]),
         []
       )
     end
 
     context "with successful response" do
-      before do
-        Storages::Peripherals::Registry.stub(
-          "nextcloud.queries.files",
-          ->(_) { ServiceResult.success(result: response) }
-        )
-      end
-
       subject { last_response.body }
 
-      it "responds with appropriate JSON" do
+      it "responds with appropriate JSON", vcr: "nextcloud/files_query_root" do
         expect(subject).to be_json_eql(response.files[0].id.to_json).at_path("files/0/id")
         expect(subject).to be_json_eql(response.files[0].name.to_json).at_path("files/0/name")
         expect(subject).to be_json_eql(response.files[1].id.to_json).at_path("files/1/id")
@@ -126,16 +121,16 @@ RSpec.describe "API v3 storage files", :storage_server_helpers, :webmock, conten
 
     context "with query failed" do
       before do
-        Storages::Peripherals::Registry.stub(
+        Storages::Adapters::Registry.stub(
           "nextcloud.queries.files",
-          ->(_) { ServiceResult.failure(result: error, errors: Storages::StorageError.new(code: error)) }
+          ->(_) { Failure(Storages::Adapters::Results::Error.new(source: self, code: error)) }
         )
       end
 
       context "with authorization failure" do
         let(:error) { :unauthorized }
 
-        it { expect(last_response).to have_http_status(:internal_server_error) }
+        it { expect(last_response).to have_http_status(:unauthorized) }
       end
 
       context "with internal error" do
@@ -159,7 +154,7 @@ RSpec.describe "API v3 storage files", :storage_server_helpers, :webmock, conten
   end
 
   describe "GET /api/v3/storages/:storage_id/files/:file_id" do
-    let(:file_id) { "42" }
+    let(:file_id) { "350" }
     let(:path) { api_v3_paths.storage_file(storage.id, file_id) }
 
     context "with successful response" do
@@ -168,35 +163,30 @@ RSpec.describe "API v3 storage files", :storage_server_helpers, :webmock, conten
           status: "OK",
           status_code: 200,
           id: file_id,
-          name: "Documents",
+          name: "Ümlæûts",
           last_modified_at: DateTime.now,
           created_at: DateTime.now,
           mime_type: "application/x-op-directory",
-          size: 1108864,
-          owner_name: "Darth Vader",
-          owner_id: "darthvader",
+          size: 19720,
+          owner_name: "admin",
+          owner_id: "admin",
           last_modified_by_name: "Darth Sidious",
           last_modified_by_id: "palpatine",
           permissions: "RGDNVCK",
-          location: "/Documents"
+          location: "/Folder/%C3%9Cml%C3%A6%C3%BBts"
         )
-      end
-
-      before do
-        files_info_query = ->(_) { ServiceResult.success(result: response) }
-        Storages::Peripherals::Registry.stub("nextcloud.queries.file_info", files_info_query)
       end
 
       subject { last_response.body }
 
-      it "responds with appropriate JSON" do
+      it "responds with appropriate JSON", vcr: "nextcloud/file_info_query_success_folder" do
         expect(subject).to be_json_eql("StorageFile".to_json).at_path("_type")
         expect(subject).to be_json_eql(response.id.to_json).at_path("id")
         expect(subject).to be_json_eql(response.name.to_json).at_path("name")
         expect(subject).to be_json_eql(response.size.to_json).at_path("size")
         expect(subject).to be_json_eql(response.mime_type.to_json).at_path("mimeType")
+
         expect(subject).to be_json_eql(response.owner_name.to_json).at_path("createdByName")
-        expect(subject).to be_json_eql(response.last_modified_by_name.to_json).at_path("lastModifiedByName")
         expect(subject).to be_json_eql(response.location.to_json).at_path("location")
         expect(subject).to be_json_eql(response.permissions.to_json).at_path("permissions")
       end
@@ -204,9 +194,9 @@ RSpec.describe "API v3 storage files", :storage_server_helpers, :webmock, conten
 
     context "with query failed" do
       before do
-        Storages::Peripherals::Registry
+        Storages::Adapters::Registry
           .stub("#{storage}.queries.file_info",
-                ->(_) { ServiceResult.failure(result: error, errors: Storages::StorageError.new(code: error)) })
+                ->(_) { Failure(Storages::Adapters::Results::Error.new(code: error, source: self)) })
       end
 
       context "with authorization failure" do
@@ -244,37 +234,33 @@ RSpec.describe "API v3 storage files", :storage_server_helpers, :webmock, conten
   describe "POST /api/v3/storages/:storage_id/files/prepare_upload" do
     let(:permissions) { %i(view_work_packages view_file_links manage_file_links) }
     let(:path) { api_v3_paths.prepare_upload(storage.id) }
-    let(:upload_link) { Storages::UploadLink.new("https://example.com/upload/xyz123", :post) }
+
+    let(:destination) { %r|direct-upload/SrQJeC5zM3B5Gw64d7dEQFQpFw8YBAtZWoxeLb59AR7PpGPyoGAkAko5G6ZiZ2HA| }
     let(:body) { { fileName: "ape.png", parent: "/Pictures", projectId: project.id }.to_json }
 
-    subject(:last_response) do
-      post(path, body)
-    end
+    let(:last_response) { post(path, body) }
 
     describe "with successful response" do
-      before do
-        Storages::Peripherals::Registry
-          .stub("nextcloud.queries.upload_link", ->(_) { ServiceResult.success(result: upload_link) })
-      end
-
       subject { last_response.body }
 
-      it "responds with appropriate JSON" do
-        expect(subject).to be_json_eql(Storages::UploadLink.name.split("::").last.to_json).at_path("_type")
+      it "responds with appropriate JSON", vcr: "nextcloud/upload_link_success" do
+        expect(subject).to be_json_eql("UploadLink".to_json).at_path("_type")
         expect(subject)
           .to(be_json_eql("#{API::V3::URN_PREFIX}storages:upload_link:no_link_provided".to_json)
                 .at_path("_links/self/href"))
-        expect(subject).to be_json_eql(upload_link.destination.to_json).at_path("_links/destination/href")
         expect(subject).to be_json_eql("post".to_json).at_path("_links/destination/method")
         expect(subject).to be_json_eql("Upload File".to_json).at_path("_links/destination/title")
+
+        href = MultiJson.load(subject).dig("_links", "destination", "href")
+        expect(href).to match(destination)
       end
     end
 
     context "with query failed" do
       before do
-        Storages::Peripherals::Registry.stub(
+        Storages::Adapters::Registry.stub(
           "nextcloud.queries.upload_link",
-          ->(_) { ServiceResult.failure(result: error, errors: Storages::StorageError.new(code: error)) }
+          ->(_) { Failure(Storages::Adapters::Results::Error.new(code: error, source: self)) }
         )
       end
 

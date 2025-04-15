@@ -35,6 +35,7 @@ module Storages
         TOKEN_CACHE_KEY = "storage.%s.httpx_access_token"
 
         def initialize(use_cache)
+          super()
           @use_cache = use_cache
         end
 

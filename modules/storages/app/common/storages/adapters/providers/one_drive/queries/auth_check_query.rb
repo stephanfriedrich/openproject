@@ -38,10 +38,6 @@ module Storages
               new(storage).call(auth_strategy:)
             end
 
-            def initialize(storage)
-              @storage = storage
-            end
-
             def call(auth_strategy:)
               Authentication[auth_strategy].call(storage: @storage) do |http|
                 handle_response http.get(UrlBuilder.url(@storage.uri, "/v1.0/me"))
