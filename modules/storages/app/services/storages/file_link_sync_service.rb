@@ -39,8 +39,8 @@ module Storages
       with_tagged_logger do
         info "Starting File Link remote synchronization"
 
-        resulting_file_links = file_links.group_by(&:storage_id).flat_map do |storage_id, records|
-          sync_storage_data(Storage.find(storage_id), records)
+        resulting_file_links = file_links.group_by(&:storage).flat_map do |storage, records|
+          sync_storage_data(storage, records)
         end
 
         @result.result = resulting_file_links
@@ -56,7 +56,7 @@ module Storages
 
       input_data = Adapters::Input::FilesInfo.build(file_ids: file_links.map(&:origin_id)).value_or do
         log_validation_error(it)
-        return set_error_status(file_links)
+        return add_validation_error(it)
       end
 
       infos = Adapters::Registry.resolve("#{storage}.queries.files_info")
@@ -73,12 +73,12 @@ module Storages
     end
 
     def auth_strategy(storage)
-      Adapters::Registry.resolve("#{storage}.authentication.user_bound").call(@user)
+      Adapters::Registry.resolve("#{storage}.authentication.user_bound").call(@user, storage)
     end
 
     def set_file_link_status(file_links, file_infos)
       info "Updating file link status..."
-      indexed = file_infos.to_h { [it.id, it] }
+      indexed = file_infos.index_by(&:id)
 
       file_links.map do |file_link|
         file_info = indexed[file_link.origin_id]

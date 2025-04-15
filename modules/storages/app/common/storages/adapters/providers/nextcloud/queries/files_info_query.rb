@@ -75,36 +75,39 @@ module Storages
               end
             end
 
-            # rubocop:disable Metrics/AbcSize
             def create_storage_file_infos(parsed_json)
               parsed_json.dig(:ocs, :data)&.map do |(key, value)|
                 if value[:statuscode] == 200
-                  Results::StorageFileInfo.new(
-                    status: value[:status],
-                    status_code: value[:statuscode],
-                    id: value[:id],
-                    name: value[:name],
-                    last_modified_at: Time.zone.at(value[:mtime]),
-                    created_at: Time.zone.at(value[:ctime]),
-                    mime_type: value[:mimetype],
-                    size: value[:size],
-                    owner_name: value[:owner_name],
-                    owner_id: value[:owner_id],
-                    last_modified_by_name: value[:modifier_name],
-                    last_modified_by_id: value[:modifier_id],
-                    permissions: value[:dav_permissions],
-                    location: location(value[:path], value[:mimetype])
-                  )
+                  build_file_info(value).bind { it }
                 else
                   Results::StorageFileInfo.new(
                     status: value[:status],
                     status_code: value[:statuscode],
-                    id: key.to_s.to_i
+                    id: key.to_s
                   )
                 end
               end
             end
 
+            # rubocop:disable Metrics/AbcSize
+            def build_file_info(value)
+              Results::StorageFileInfo.build(
+                status: value[:status],
+                status_code: value[:statuscode],
+                id: value[:id].to_s,
+                name: value[:name],
+                last_modified_at: Time.zone.at(value[:mtime]),
+                created_at: Time.zone.at(value[:ctime]),
+                mime_type: value[:mimetype],
+                size: value[:size],
+                owner_name: value[:owner_name],
+                owner_id: value[:owner_id],
+                last_modified_by_name: value[:modifier_name],
+                last_modified_by_id: value[:modifier_id],
+                permissions: value[:dav_permissions],
+                location: location(value[:path], value[:mimetype])
+              )
+            end
             # rubocop:enable Metrics/AbcSize
 
             def location(file_path, mimetype)
