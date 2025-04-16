@@ -124,4 +124,40 @@ RSpec.describe Project::Phase do
       expect(subject.errors[:date_range]).to be_empty
     end
   end
+
+  describe "duration calculation" do
+    shared_let(:week_days) { week_with_saturday_and_sunday_as_weekend }
+
+    let(:date) { Time.zone.today }
+
+    describe "#set_calculated_duration" do
+      it "sets duration to the number of working days in complete date range" do
+        subject.duration = 0
+        subject.date_range = date..date + 27
+
+        expect { subject.set_calculated_duration }.to change(subject, :duration).from(0).to(20)
+      end
+
+      it "sets duration to nil if date range is incomplete" do
+        subject.duration = 0
+        subject.start_date = nil
+
+        expect { subject.set_calculated_duration }.to change(subject, :duration).from(0).to(nil)
+      end
+    end
+
+    describe "#calculate_duration" do
+      it "returns number of working days in complete date range" do
+        subject.date_range = date..date + 27
+
+        expect(subject.calculate_duration).to eq(20)
+      end
+
+      it "returns nil if date range is incomplete" do
+        subject.start_date = nil
+
+        expect(subject.calculate_duration).to be_nil
+      end
+    end
+  end
 end

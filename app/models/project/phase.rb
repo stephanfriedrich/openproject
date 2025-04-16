@@ -86,4 +86,14 @@ class Project::Phase < ApplicationRecord
   def validate_date_range
     errors.add(:date_range, :start_date_must_be_before_finish_date) if range_set? && (start_date > finish_date)
   end
+
+  def set_calculated_duration
+    self.duration = calculate_duration
+  end
+
+  def calculate_duration
+    return nil unless range_set?
+
+    Day.working.from_range(from: start_date, to: finish_date).count
+  end
 end

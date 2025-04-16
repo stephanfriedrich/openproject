@@ -28,5 +28,10 @@
 
 module ProjectLifeCycleSteps
   class SetAttributesService < ::BaseServices::SetAttributes
+    def perform(*)
+      super.tap do
+        model.set_calculated_duration
+      end
+    end
   end
 end
