@@ -28,9 +28,6 @@
 
 module ProjectLifeCycleSteps
   class BaseContract < ::ModelContract
-    attribute :start_date
-    attribute :finish_date
-
     validate :validate_edit_project_phases_permission
 
     def validate_edit_project_phases_permission
