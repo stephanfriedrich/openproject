@@ -32,12 +32,6 @@ module ProjectLifeCycleSteps
   class UpdateService < ::BaseServices::Update
     delegate :project, to: :model
 
-    def after_validate(*)
-      set_duration
-
-      super
-    end
-
     def after_perform(*)
       reschedule_following_phases if model.range_set?
 
@@ -47,16 +41,6 @@ module ProjectLifeCycleSteps
     end
 
     private
-
-    def set_duration
-      model.duration = calculate_duration
-    end
-
-    def calculate_duration
-      return nil unless model.range_set?
-
-      Day.working.from_range(from: model.start_date, to: model.finish_date).count
-    end
 
     def reschedule_following_phases
       from = initial_reschedule_date

@@ -64,7 +64,7 @@ RSpec.describe ProjectLifeCycleSteps::UpdateService, type: :model do
     end
   end
 
-  describe "#set_duration" do
+  describe "updating duration through SetAttributesService" do
     shared_let(:phase) { create(:project_phase, duration: 0) }
 
     let(:user) { build_stubbed(:user) }
@@ -76,30 +76,20 @@ RSpec.describe ProjectLifeCycleSteps::UpdateService, type: :model do
       mock_permissions_for(user) do |mock|
         mock.allow_in_project(:edit_project_phases, project:)
       end
+
+      allow(phase).to receive(:set_calculated_duration)
     end
 
-    it "calculates and sets the duration based on the date range" do
-      expect(service.call(date_range: date..date + 27)).to be_success
+    it "sets duration for valid model" do
+      expect(service.call(date_range: date - 1..date + 1)).to be_success
 
-      expect(phase.reload.duration).to eq(20)
+      expect(phase).to have_received(:set_calculated_duration)
     end
 
-    it "nullifies duration without start date" do
-      expect(service.call(start_date: nil)).to be_success
+    it "sets duration for invalid model" do
+      expect(service.call(date_range: date + 1..date - 1)).to be_failure
 
-      expect(phase.reload.duration).to be_nil
-    end
-
-    it "nullifies duration without finish date" do
-      expect(service.call(finish_date: nil)).to be_success
-
-      expect(phase.reload.duration).to be_nil
-    end
-
-    it "nullifies duration without date range" do
-      expect(service.call(date_range: nil)).to be_success
-
-      expect(phase.reload.duration).to be_nil
+      expect(phase).to have_received(:set_calculated_duration)
     end
   end
 
