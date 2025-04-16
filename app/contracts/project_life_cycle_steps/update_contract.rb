@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -28,6 +30,34 @@
 
 module ProjectLifeCycleSteps
   class UpdateContract < BaseContract
-    alias_method :project, :model
+    validate :validate_start_after_preceeding_phases
+
+    delegate :project, to: :model
+
+    def writable_attributes = %w[start_date finish_date active]
+
+    def validate_start_after_preceeding_phases
+      return unless model.active?
+      return unless model.range_set?
+      return if start_after_preceding_phases?
+
+      model.errors.add(:date_range, :non_continuous_dates)
+    end
+
+    private
+
+    def start_after_preceding_phases?
+      preceding_phases
+        .select(&:range_set?)
+        .all? { valid_dates?(current: model, previous: it) }
+    end
+
+    def valid_dates?(current:, previous:)
+      current.start_date > previous.finish_date
+    end
+
+    def preceding_phases
+      project.available_phases.select { it.position < model.position }
+    end
   end
 end

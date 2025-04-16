@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -28,11 +30,71 @@
 
 module ProjectLifeCycleSteps
   class UpdateService < ::BaseServices::Update
-    def after_perform(call)
-      project = call.result.project
+    delegate :project, to: :model
+
+    def after_validate(*)
+      set_duration
+
+      super
+    end
+
+    def after_perform(*)
+      reschedule_following_phases if model.range_set?
+
       project.touch_and_save_journals
 
-      call
+      super
+    end
+
+    private
+
+    def set_duration
+      model.duration = calculate_duration
+    end
+
+    def calculate_duration
+      return nil unless model.range_set?
+
+      Day.working.from_range(from: model.start_date, to: model.finish_date).count
+    end
+
+    def reschedule_following_phases
+      from = initial_reschedule_date
+
+      following_phases.each do |phase|
+        next unless phase.range_set?
+        next unless phase.duration # not updated using service that sets duration
+
+        date_range = calculate_date_range(from, duration: phase.duration)
+        next unless date_range
+
+        next unless phase.update(date_range:)
+
+        from = date_range.end + 1
+      end
+    end
+
+    def initial_reschedule_date
+      model.active? ? model.finish_date + 1 : model.start_date
+    end
+
+    def following_phases
+      project.available_phases.select { it.position > model.position }
+    end
+
+    def calculate_date_range(from, duration:)
+      days = working_days_from(from, count: duration)
+
+      days.first.date..days.last.date if days.length == duration
+    end
+
+    def working_days_from(from, count:)
+      days = Day.working.from_range(from:, to: from.next_year).first(count)
+      if days.length < count && !days.empty?
+        years = count.ceildiv(days.length) + 1
+        days = Day.working.from_range(from:, to: from.next_year(years)).first(count)
+      end
+      days
     end
   end
 end

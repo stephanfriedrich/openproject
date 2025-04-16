@@ -291,7 +291,7 @@ class PermittedParams
   end
 
   def project_phase
-    params.require(:project_phase).permit(%i[id date_range])
+    params.require(:project_phase).permit(%i[date_range])
   end
 
   def project_custom_field_project_mapping

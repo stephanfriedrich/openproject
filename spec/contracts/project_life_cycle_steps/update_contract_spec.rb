@@ -34,12 +34,15 @@ require "contracts/shared/model_contract_shared_context"
 RSpec.describe ProjectLifeCycleSteps::UpdateContract do
   include_context "ModelContract shared context"
 
-  let(:contract) { described_class.new(phase, user) }
   let(:user) { build_stubbed(:user) }
-  let(:project) { build_stubbed(:project) }
-  let(:phase) { build_stubbed(:project_phase, project:) }
+
+  subject(:contract) { described_class.new(phase, user) }
 
   context "with authorized user" do
+    let(:phase) { build_stubbed(:project_phase) }
+    let(:project) { phase.project }
+    let(:date) { Date.current }
+
     before do
       mock_permissions_for(user) do |mock|
         mock.allow_in_project(:edit_project_phases, project:)
@@ -47,10 +50,98 @@ RSpec.describe ProjectLifeCycleSteps::UpdateContract do
     end
 
     it_behaves_like "contract is valid"
-    include_examples "contract reuses the model errors"
+    it_behaves_like "contract reuses the model errors"
+
+    context "when phase is invalid" do
+      let(:phase) do
+        build_stubbed(:project_phase, start_date: date + 1, finish_date: date - 1)
+      end
+
+      it_behaves_like "contract is invalid", date_range: :start_date_must_be_before_finish_date
+    end
+
+    context "when trying to change extra attributes" do
+      before do
+        phase.duration = 42
+      end
+
+      it_behaves_like "contract is invalid", duration: :error_readonly
+    end
+
+    describe "#validate_start_after_preceeding_phases" do
+      def build_phase(**) = build_stubbed(:project_phase, project:, **)
+
+      let(:project) { build_stubbed(:project) }
+      let(:phases) { [preceding, phase, following] }
+      let(:phase) { build_phase(date_range:, active:) }
+      let(:preceding) { build_phase(date_range: preceding_date_range) }
+      let(:following) { build_phase(date_range: following_date_range) }
+      let(:active) { true }
+      let(:date_range) { date - 1..date + 1 }
+      let(:preceding_date_range) { date - 6..date - 5 }
+      let(:following_date_range) { date + 5..date + 6 }
+
+      before do
+        allow(project).to receive(:available_phases).and_return(phases)
+      end
+
+      context "with successive non overlapping dates" do
+        it_behaves_like "contract is valid"
+      end
+
+      context "without dates" do
+        let(:date_range) { nil }
+
+        it_behaves_like "contract is valid"
+      end
+
+      context "with preceding phase overlapping with start" do
+        let(:preceding_date_range) { date - 6..date - 1 }
+
+        it_behaves_like "contract is invalid", date_range: :non_continuous_dates
+
+        context "when inactive" do
+          let(:active) { false }
+
+          it_behaves_like "contract is valid"
+        end
+      end
+
+      context "with preceding phase following this" do
+        let(:preceding_date_range) { date + 2..date + 4 }
+
+        it_behaves_like "contract is invalid", date_range: :non_continuous_dates
+
+        context "when inactive" do
+          let(:active) { false }
+
+          it_behaves_like "contract is valid"
+        end
+      end
+
+      context "with preceding phase without dates" do
+        let(:preceding_date_range) { nil }
+
+        it_behaves_like "contract is valid"
+      end
+
+      context "with following phase overlapping with start" do
+        let(:following_date_range) { date - 1..date + 6 }
+
+        it_behaves_like "contract is valid"
+      end
+
+      context "with following phase preceding this" do
+        let(:following_date_range) { date - 4..date - 2 }
+
+        it_behaves_like "contract is valid"
+      end
+    end
   end
 
   context "with unauthorized user" do
+    let(:phase) { build_stubbed(:project_phase) }
+
     it_behaves_like "contract user is unauthorized"
   end
 end
