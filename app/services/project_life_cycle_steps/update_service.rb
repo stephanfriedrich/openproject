@@ -63,7 +63,7 @@ module ProjectLifeCycleSteps
 
       following_phases.each do |phase|
         next unless phase.range_set?
-        next unless phase.duration # not updated using service that sets duration
+        next unless phase.duration&.positive? # not updated using service that sets duration
 
         date_range = calculate_date_range(from, duration: phase.duration)
         next unless date_range
