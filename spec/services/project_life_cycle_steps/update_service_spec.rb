@@ -31,12 +31,37 @@
 require "spec_helper"
 require "services/base_services/behaves_like_update_service"
 
-RSpec.describe ProjectLifeCycleSteps::UpdateSingleService, type: :model do
+RSpec.describe ProjectLifeCycleSteps::UpdateService, type: :model do
   shared_let(:week_days) { week_with_saturday_and_sunday_as_weekend }
+
+  before do
+    allow(project).to receive(:touch_and_save_journals)
+  end
 
   it_behaves_like "BaseServices update service" do
     let(:factory) { :project_phase }
-    let(:contract_class) { ProjectLifeCycleSteps::UpdateSingleContract }
+    let(:contract_class) { ProjectLifeCycleSteps::UpdateContract }
+    let(:project) { model_instance.project }
+  end
+
+  describe "journalizing" do
+    shared_let(:phase) { create(:project_phase) }
+
+    let(:user) { build_stubbed(:user) }
+    let(:project) { phase.project }
+    let(:service) { described_class.new(user:, model: phase) }
+
+    before do
+      mock_permissions_for(user) do |mock|
+        mock.allow_in_project(:edit_project_phases, project:)
+      end
+    end
+
+    it "calls touch_and_save_journals on project" do
+      expect(service.call).to be_success
+
+      expect(project).to have_received(:touch_and_save_journals)
+    end
   end
 
   describe "#set_duration" do
