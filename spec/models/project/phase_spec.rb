@@ -105,23 +105,28 @@ RSpec.describe Project::Phase do
   end
 
   describe "#validate_date_range" do
+    subject { create(:project_phase) }
+
     it "is valid when both dates are blank" do
-      stage = build(:project_phase, start_date: nil, finish_date: nil)
-      expect(stage).to be_valid
+      subject.assign_attributes(start_date: nil, finish_date: nil)
+      expect(subject).to be_valid
     end
 
-    it "adds error if start_date is after finish_date" do
-      subject.start_date = Date.tomorrow
-      subject.finish_date = Time.zone.today
+    it "adds error if start_date is after finish_date (start date is changed)" do
+      subject.start_date = subject.finish_date + 1.day
       expect(subject).not_to be_valid
-      expect(subject.errors.symbols_for(:date_range)).to include(:start_date_must_be_before_finish_date)
+      expect(subject.errors.symbols_for(:start_date)).to include(:must_be_before_finish_date)
+    end
+
+    it "adds error if finish_date is before start_date (finish date is changed)" do
+      subject.finish_date = subject.start_date - 1.day
+      expect(subject).not_to be_valid
+      expect(subject.errors.symbols_for(:finish_date)).to include(:must_be_after_start_date)
     end
 
     it "does not add errors if start_date is before or equal to finish_date" do
-      subject.start_date = Time.zone.today
-      subject.finish_date = Time.zone.today
-      expect(subject).not_to be_valid
-      expect(subject.errors[:date_range]).to be_empty
+      subject.start_date = subject.finish_date
+      expect(subject).to be_valid
     end
   end
 

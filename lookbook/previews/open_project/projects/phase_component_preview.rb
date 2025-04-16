@@ -35,7 +35,7 @@ module OpenProject::Projects
       phase = Project::Phase.new(id: 1,
                                  definition: definition(start_gate: true, finish_gate: true),
                                  start_date: Date.current - 2.days,
-                                 end_date: Date.current + 2.days)
+                                 finish_date: Date.current + 2.days)
 
       render_with_template(locals: { phase: })
     end
@@ -51,7 +51,7 @@ module OpenProject::Projects
       phase = Project::Phase.new(id: 1,
                                  definition: definition(start_gate: true),
                                  start_date: Date.current - 2.days,
-                                 end_date: Date.current + 2.days)
+                                 finish_date: Date.current + 2.days)
 
       render_with_template(locals: { phase: })
     end
@@ -60,7 +60,7 @@ module OpenProject::Projects
       phase = Project::Phase.new(id: 1,
                                  definition: definition(finish_gate: true),
                                  start_date: Date.current - 2.days,
-                                 end_date: Date.current + 2.days)
+                                 finish_date: Date.current + 2.days)
 
       render_with_template(locals: { phase: })
     end
@@ -69,7 +69,7 @@ module OpenProject::Projects
       phase = Project::Phase.new(id: 1,
                                  definition: definition,
                                  start_date: Date.current - 2.days,
-                                 end_date: Date.current + 2.days)
+                                 finish_date: Date.current + 2.days)
 
       render_with_template(locals: { phase: })
     end

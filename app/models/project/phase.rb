@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -84,7 +86,14 @@ class Project::Phase < ApplicationRecord
   end
 
   def validate_date_range
-    errors.add(:date_range, :start_date_must_be_before_finish_date) if range_set? && (start_date > finish_date)
+    if range_set? && (start_date > finish_date)
+      date_field, error_message = if finish_date_changed?
+                                    %i[finish_date must_be_after_start_date]
+                                  else
+                                    %i[start_date must_be_before_finish_date]
+                                  end
+      errors.add(date_field, error_message)
+    end
   end
 
   def set_calculated_duration

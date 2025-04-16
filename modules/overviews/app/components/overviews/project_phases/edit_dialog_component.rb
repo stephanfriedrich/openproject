@@ -36,6 +36,18 @@ module Overviews
       include OpPrimer::ComponentHelpers
 
       DIALOG_ID = "edit-project-life-cycles-dialog"
+
+      def title
+        helpers.safe_join([icon, " ", model.name])
+      end
+
+      def icon
+        render Primer::Beta::Octicon.new(icon: :"op-phase", classes: icon_color_class)
+      end
+
+      def icon_color_class
+        helpers.hl_inline_class("project_phase_definition", model.definition)
+      end
     end
   end
 end

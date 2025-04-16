@@ -456,10 +456,6 @@ en:
         no_results_title_text: There is no additional recorded disk space consumed by this project.
       work_package_priorities:
         new_label: "New priority"
-  project_phase:
-    duration:
-      one: "Duration: %{count} working day"
-      other: "Duration: %{count} working days"
   lists:
     create:
       success: "The modified list has been saved as a new list"
@@ -1045,6 +1041,9 @@ en:
       project/phase:
         date_range: "Date range"
         definition: "Definition"
+        duration: "Duration"
+        start_date: "Start date"
+        finish_date: "Finish date"
       project/phase_definition:
         name: "Name"
         color: "Color"
@@ -1356,8 +1355,11 @@ en:
               blank: "Please select a project."
         project/phase:
           attributes:
+            start_date:
+              must_be_before_finish_date: "must be before the finish date."
+            finish_date:
+              must_be_after_start_date: "must be after the start date."
             date_range:
-              start_date_must_be_before_finish_date: "start date must be before the finish date."
               non_continuous_dates: "can't be earlier than the previous phase's end date."
               incomplete: "is incomplete."
         query:

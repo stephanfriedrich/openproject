@@ -1,12 +1,13 @@
 <%=
   render(
     Primer::Alpha::Dialog.new(
-      title: t("label_life_cycle_step_plural"),
-      size: :medium_portrait,
+      title:,
+      size: :large,
+      padding: :condensed,
       id: DIALOG_ID
     )
   ) do |d|
-    d.with_header(variant: :large)
+    d.with_header(variant: :medium)
     d.with_body do
       render(Overviews::ProjectPhases::EditComponent.new(model))
     end

@@ -56,10 +56,10 @@ module Overviews
         if allowed_to_edit?
           Primer::Beta::Link.new(
             href: edit_project_phase_path(model),
+            classes: "hover-input",
             data: { controller: "async-dialog" },
             aria: { label: I18n.t(:label_edit) },
-            test_selector: "project-life-cycle-edit-button-#{model.id}",
-            underline: false
+            test_selector: "project-life-cycle-edit-button-#{model.id}"
           )
         else
           Primer::Content.new

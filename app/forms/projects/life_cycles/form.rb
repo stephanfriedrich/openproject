@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -28,7 +30,11 @@
 module Projects::LifeCycles
   class Form < ApplicationForm
     form do |f|
-      multi_value_life_cycle_input(f)
+      f.group(layout: :horizontal) do |horizontal_form|
+        start_date_input(horizontal_form)
+        finish_date_input(horizontal_form)
+        duration_input(horizontal_form)
+      end
     end
 
     private
@@ -37,10 +43,9 @@ module Projects::LifeCycles
       "life-cycle-step-#{model.id}"
     end
 
-    def base_input_attributes
+    def datepicker_attributes
       {
-        label:,
-        leading_visual: { icon: :calendar },
+        inset: true,
         datepicker_options: {
           inDialog: Overviews::ProjectPhases::EditDialogComponent::DIALOG_ID,
           data: { action: "change->overview--project-life-cycles-form#previewForm" }
@@ -51,28 +56,27 @@ module Projects::LifeCycles
       }
     end
 
-    def multi_value_life_cycle_input(form)
-      value = [model.start_date, model.finish_date].compact.join(" - ")
-
-      input_attributes = { name: :date_range, value: }
-      if model.duration
-        input_attributes[:caption] =
-          I18n.t("project_phase.duration", count: model.duration)
-      end
-
-      form.range_date_picker **base_input_attributes, **input_attributes
+    def start_date_input(form)
+      input_attributes = { name: :start_date, label: attribute_name(:start_date) }
+      form.single_date_picker **datepicker_attributes, **input_attributes
     end
 
-    def label
-      helpers.safe_join([icon, " ", model.name])
+    def finish_date_input(form)
+      input_attributes = { name: :finish_date, label: attribute_name(:finish_date) }
+      form.single_date_picker **datepicker_attributes, **input_attributes
     end
 
-    def icon
-      render Primer::Beta::Octicon.new(icon: :"op-phase", classes: icon_color_class)
-    end
-
-    def icon_color_class
-      helpers.hl_inline_class("project_phase_definition", model.definition)
+    def duration_input(form)
+      input_attributes = {
+        name: :duration,
+        label: attribute_name(:duration),
+        type: :number,
+        inset: true,
+        value: model.duration,
+        trailing_visual: { text: { text: I18n.t("datetime.units.day", count: model.duration) } }
+      }
+      # binding.pry
+      form.text_field **input_attributes
     end
   end
 end
