@@ -33,7 +33,6 @@ class Project::Phase < ApplicationRecord
              class_name: "Project::PhaseDefinition"
   has_many :work_packages, inverse_of: :project_phase, dependent: :nullify
 
-  validates :duration, presence: true, if: :range_set?
   validate :validate_date_range
 
   delegate :name,
