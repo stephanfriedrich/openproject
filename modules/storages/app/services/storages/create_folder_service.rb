@@ -42,17 +42,25 @@ module Storages
     end
 
     def call(user:, name:, parent_id:)
-      auth_strategy = Adapters::Registry.resolve("#{@storage}.authentication.user_bound").call(user)
-      parent_location = parent_path(parent_id, user).on_failure { return it }.result
+      auth_strategy = Adapters::Registry.resolve("#{@storage}.authentication.user_bound").call(user, @storage)
+      parent_location = parent_path(parent_id, user).on_failure do
+        add_error(:base, it.errors)
+        return @result
+      end.result
 
-      Adapters::Input::CreateFolder.build(folder_name: name, parent_location:).bind do |input_data|
-        Adapters::Registry.resolve("#{@storage}.commands.create_folder")
-                          .call(storage: @storage, auth_strategy:, input_data:)
-                          .either(
-                            ->(folder) { ServiceResult.success(result: folder) },
-                            ->(failure) { ServiceResult.failure(errors: failure) }
-                          )
+      input_data = Adapters::Input::CreateFolder.build(folder_name: name, parent_location:).value_or do
+        add_validation_error(it)
+        return @result
       end
+
+      storage_folder = Adapters::Registry.resolve("#{@storage}.commands.create_folder")
+                        .call(storage: @storage, auth_strategy:, input_data:).value_or do
+        add_error(:base, it, options: input_data.to_h)
+        return @result
+      end
+
+      @result.result = storage_folder
+      @result
     end
 
     private

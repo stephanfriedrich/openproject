@@ -37,22 +37,19 @@ RSpec.describe "API v3 storage folders", :storage_server_helpers, :webmock, cont
   let(:permissions) { %i(view_work_packages view_file_links manage_file_links) }
   let(:project) { create(:project) }
 
-  let(:current_user) do
-    create(:user, member_with_permissions: { project => permissions })
-  end
+  let(:current_user) { create(:user, member_with_permissions: { project => permissions }) }
 
-  let(:oauth_application) { create(:oauth_application) }
-  let(:storage) { create(:nextcloud_storage_configured, creator: current_user, oauth_application:) }
+  let(:storage) { create(:nextcloud_storage_configured, creator: current_user) }
   let(:oauth_token) { create(:oauth_client_token, user: current_user, oauth_client: storage.oauth_client) }
-  let(:project_storage) { create(:project_storage, project:, storage:) }
+  let!(:project_storage) { create(:project_storage, project:, storage:) }
+
+  let(:create_folder_double) { class_double(Storages::Adapters::Providers::Nextcloud::Commands::CreateFolderCommand) }
+  let(:auth_strategy) { Storages::Adapters::Registry["nextcloud.authentication.user_bound"].call(current_user, storage) }
+  let(:input_data) { Storages::Adapters::Input::CreateFolder.build(folder_name:, parent_location: "/").value! }
 
   subject(:last_response) { post(path, body) }
 
-  before do
-    oauth_application
-    project_storage
-    login_as current_user
-  end
+  before { login_as current_user }
 
   describe "POST /api/v3/storages/:storage_id/folders" do
     let(:path) { api_v3_paths.storage_folders(storage.id) }
@@ -60,52 +57,47 @@ RSpec.describe "API v3 storage folders", :storage_server_helpers, :webmock, cont
     let(:folder_name) { "TestFolder" }
 
     let(:response) do
-      Storages::StorageFile.new(
-        id: 1,
+      Storages::Adapters::Results::StorageFile.build(
+        id: "1",
         name: folder_name,
         size: 128,
         mime_type: "application/x-op-directory",
-        created_at: DateTime.now,
-        last_modified_at: DateTime.now,
+        created_at: Time.zone.now,
+        last_modified_at: Time.zone.now,
         created_by_name: "Obi-Wan Kenobi",
         last_modified_by_name: "Obi-Wan Kenobi",
         location: "/",
         permissions: %i[readable]
-      )
+      ).value!
     end
 
     let(:file_info) do
-      Storages::StorageFileInfo.new(
+      Storages::Adapters::Results::StorageFileInfo.build(
         status: "OK",
         status_code: 200,
         id: SecureRandom.hex,
         name: "/",
         location: "/"
-      )
+      ).value!
     end
 
     before do
-      file_info_mock = class_double(Storages::Peripherals::StorageInteraction::Nextcloud::FileInfoQuery)
+      file_info_mock = class_double(Storages::Adapters::Providers::Nextcloud::Queries::FileInfoQuery)
       allow(file_info_mock).to receive(:call).with(
-        storage: storage,
-        auth_strategy: instance_of(Storages::Peripherals::StorageInteraction::AuthenticationStrategies::Strategy),
-        file_id: file_info.id
-      ).and_return(ServiceResult.success(result: file_info))
-      Storages::Peripherals::Registry.stub("nextcloud.queries.file_info", file_info_mock)
+        storage:,
+        auth_strategy:,
+        input_data: Storages::Adapters::Input::FileInfo.build(file_id: file_info.id).value!
+      ).and_return(Success(file_info))
+      Storages::Adapters::Registry.stub("nextcloud.queries.file_info", file_info_mock)
     end
 
     context "with successful response" do
       subject { last_response.body }
 
       before do
-        create_folder_mock = class_double(Storages::Peripherals::StorageInteraction::Nextcloud::CreateFolderCommand)
-        allow(create_folder_mock).to receive(:call).with(
-          storage: storage,
-          auth_strategy: instance_of(Storages::Peripherals::StorageInteraction::AuthenticationStrategies::Strategy),
-          folder_name:,
-          parent_location: instance_of(Storages::Peripherals::ParentFolder)
-        ).and_return(ServiceResult.success(result: response))
-        Storages::Peripherals::Registry.stub("nextcloud.commands.create_folder", create_folder_mock)
+        allow(create_folder_double).to receive(:call).with(storage:, auth_strategy:, input_data:).and_return(Success(response))
+
+        Storages::Adapters::Registry.stub("nextcloud.commands.create_folder", create_folder_double)
       end
 
       it "responds with appropriate JSON" do
@@ -116,21 +108,18 @@ RSpec.describe "API v3 storage folders", :storage_server_helpers, :webmock, cont
     end
 
     context "with query failed" do
+      let(:error_result) { Storages::Adapters::Results::Error.new(code: error, source: self) }
+
       before do
-        create_folder_mock = class_double(Storages::Peripherals::StorageInteraction::Nextcloud::CreateFolderCommand)
-        allow(create_folder_mock).to receive(:call).with(
-          storage: storage,
-          auth_strategy: instance_of(Storages::Peripherals::StorageInteraction::AuthenticationStrategies::Strategy),
-          folder_name:,
-          parent_location: instance_of(Storages::Peripherals::ParentFolder)
-        ).and_return(ServiceResult.failure(result: error, errors: Storages::StorageError.new(code: error)))
-        Storages::Peripherals::Registry.stub("nextcloud.commands.create_folder", create_folder_mock)
+        allow(create_folder_double).to receive(:call).with(storage:, auth_strategy:, input_data:)
+                                                     .and_return(Failure(error_result))
+        Storages::Adapters::Registry.stub("nextcloud.commands.create_folder", create_folder_double)
       end
 
       context "with authorization failure" do
         let(:error) { :unauthorized }
 
-        it { expect(last_response).to have_http_status(:internal_server_error) }
+        it { expect(last_response).to have_http_status(:unauthorized) }
       end
 
       context "with internal error" do

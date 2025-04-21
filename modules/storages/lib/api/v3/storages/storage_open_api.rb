@@ -35,21 +35,21 @@ class API::V3::Storages::StorageOpenAPI < API::OpenProjectAPI
 
   helpers do
     def auth_strategy
-      Storages::Peripherals::Registry.resolve("#{@storage}.authentication.user_bound").call(user: current_user, storage: @storage)
+      Storages::Adapters::Registry.resolve("#{@storage}.authentication.user_bound").call(current_user, @storage)
     end
   end
 
   resources :open do
     get do
-      Storages::Peripherals::Registry
+      Storages::Adapters::Registry
         .resolve("#{@storage}.queries.open_storage")
         .call(storage: @storage, auth_strategy:)
-        .match(
-          on_success: ->(url) do
+        .either(
+          ->(url) do
             redirect url, body: "The requested resource can be viewed at #{url}"
             status 303
           end,
-          on_failure: ->(error) { raise_error(error) }
+          ->(error) { raise_error(error) }
         )
     end
   end

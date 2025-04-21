@@ -45,7 +45,7 @@ module Storages
     end
 
     let(:name) { "TestFolderName" }
-    let(:auth_strategy) { Adapters::Registry["#{storage}.authentication.user_bound"].call(user) }
+    let(:auth_strategy) { Adapters::Registry["#{storage}.authentication.user_bound"].call(user, storage) }
 
     subject(:service) { described_class.new(storage) }
 

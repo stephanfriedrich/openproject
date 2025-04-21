@@ -55,7 +55,6 @@ module Storages
           end
 
           namespace(:queries) do
-            register(:auth_check, Queries::AuthCheckQuery)
             register(:download_link, Queries::DownloadLinkQuery)
             register(:file_info, Queries::FileInfoQuery)
             register(:file_path_to_id_map, Queries::FilePathToIdMapQuery)

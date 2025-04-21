@@ -50,11 +50,14 @@ module Storages
         end
       end
 
-      # TODO: Add tests for this - 2025-01-15 @mereghost
+      # TODO: Needs update for OIDC. Add tests for this.
+      #   Used only on the API. Should it become a service? - 2025-01-15 @mereghost
       def self.authorization_state(storage:, user:)
-        auth_strategy = Input::Strategy.build(user:, key: :oauth_user_token)
+        return :not_connected if RemoteIdentity.where(integration: storage, user:).none?
 
-        Registry.resolve("#{storage}.queries.auth_check")
+        auth_strategy = Registry["#{storage}.authentication.user_bound"].call(user, storage)
+
+        Registry.resolve("#{storage}.queries.user")
                 .call(storage:, auth_strategy:)
                 .either(
                   ->(*) { :connected },

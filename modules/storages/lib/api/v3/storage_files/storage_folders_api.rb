@@ -49,14 +49,10 @@ module API
               name: params["name"],
               parent_id: params["parent_id"]
             ).match(
-              on_success: lambda { |storage_folder|
-                API::V3::StorageFiles::StorageFileRepresenter.new(
-                  storage_folder,
-                  @storage,
-                  current_user:
-                )
+              on_success: ->(storage_folder) {
+                API::V3::StorageFiles::StorageFileRepresenter.new(storage_folder, @storage, current_user:)
               },
-              on_failure: ->(error) { raise_error(error) }
+              on_failure: ->(error) { raise_service_result_error(error) }
             )
           end
         end

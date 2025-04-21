@@ -35,7 +35,7 @@ module Storages
     end
 
     def call(user:, storage:, file_id:)
-      auth_strategy = Adapters::Registry.resolve("#{storage}.authentication.user_bound").call(user)
+      auth_strategy = Adapters::Registry.resolve("#{storage}.authentication.user_bound").call(user, storage)
 
       info "Requesting file #{file_id} information on #{storage.name}"
       input_data = Adapters::Input::FileInfo.build(file_id:).value_or do
@@ -43,11 +43,9 @@ module Storages
         return @result
       end
 
-      file_info = Adapters::Registry.resolve("#{storage}.queries.file_info")
-                                    .call(storage:, auth_strategy:, input_data:)
+      file_info = Adapters::Registry.resolve("#{storage}.queries.file_info").call(storage:, auth_strategy:, input_data:)
                                     .value_or do
         add_error(:base, it, options: { file_id: })
-
         return @result
       end
 
