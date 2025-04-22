@@ -58,12 +58,12 @@ module Projects::LifeCycles
 
     def start_date_input(form)
       input_attributes = { name: :start_date, label: attribute_name(:start_date) }
-      form.single_date_picker **datepicker_attributes, **input_attributes
+      form.text_field **datepicker_attributes, **input_attributes
     end
 
     def finish_date_input(form)
       input_attributes = { name: :finish_date, label: attribute_name(:finish_date) }
-      form.single_date_picker **datepicker_attributes, **input_attributes
+      form.text_field **datepicker_attributes, **input_attributes
     end
 
     def duration_input(form)
