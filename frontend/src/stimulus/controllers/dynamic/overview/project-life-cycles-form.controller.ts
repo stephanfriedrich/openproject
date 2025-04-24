@@ -28,19 +28,87 @@
  * ++
  */
 
+import { TimezoneService } from 'core-app/core/datetime/timezone.service';
 import FormPreviewController from '../../form-preview.controller';
+import {
+  debounce,
+  DebouncedFunc,
+} from 'lodash';
 
 export default class ProjectLifeCyclesFormController extends FormPreviewController {
-  previewForm(event:Event) {
-    const target = event.target as HTMLElement;
-    if (this.datePickerVisible(target)) {
-      return; // flatpickr is still open, do not submit yet.
-    }
+  private timezoneService:TimezoneService;
+  private handleFlatpickrDatesChangedBound = this.handleFlatpickrDatesChanged.bind(this);
+  private updateFlatpickrCalendarBound = this.updateFlatpickrCalendar.bind(this);
+  private previewForm:DebouncedFunc<() => void>;
 
-    void this.submit();
+  static targets = ['startDate', 'finishDate', 'duration'];
+
+  declare readonly startDateTarget:HTMLInputElement;
+  declare readonly finishDateTarget:HTMLInputElement;
+  declare readonly durationTarget:HTMLInputElement;
+
+  async connect() {
+    super.connect();
+
+    this.previewForm = debounce(() => {
+      void this.submit();
+    }, 200);
+
+    const context = await window.OpenProject.getPluginContext();
+    this.timezoneService = context.services.timezone;
+
+    document.addEventListener('date-picker:flatpickr-dates-changed', this.handleFlatpickrDatesChangedBound);
+    document.addEventListener('turbo:before-stream-render', this.updateFlatpickrCalendarBound);
   }
 
-  datePickerVisible(element:HTMLElement) {
-    return element.classList.contains('active');
+  disconnect() {
+    document.removeEventListener('date-picker:flatpickr-dates-changed', this.handleFlatpickrDatesChangedBound);
+    document.removeEventListener('turbo:before-stream-render', this.updateFlatpickrCalendarBound);
+  }
+
+  private updateFlatpickrCalendar() {
+    const dates:Date[] = _.compact([
+      this.toDate(this.startDateTarget.value), this.toDate(this.finishDateTarget.value),
+    ]);
+    const ignoreNonWorkingDays = false;
+    const mode = this.mode();
+
+    document.dispatchEvent(
+      new CustomEvent('date-picker:flatpickr-set-values', {
+        detail: {
+          dates,
+          ignoreNonWorkingDays,
+          mode,
+        },
+      }),
+    );
+  }
+
+  private mode():'single'|'range' {
+    if (this.startDateTarget.disabled) {
+      return 'single';
+    }
+    return 'range';
+  }
+
+  handleFlatpickrDatesChanged(event:CustomEvent<{ dates:Date[] }>) {
+    const dates = event.detail.dates;
+    this.startDateTarget.value = this.dateToIso(dates[0]);
+    this.finishDateTarget.value = this.dateToIso(dates[1]);
+    this.previewForm();
+  }
+
+  private dateToIso(date:Date|null):string {
+    if (date) {
+      return this.timezoneService.utcDateToISODateString(date);
+    }
+    return '';
+  }
+
+  private toDate(date:string|null):Date|null {
+    if (date && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      return new Date(date);
+    }
+    return null;
   }
 }

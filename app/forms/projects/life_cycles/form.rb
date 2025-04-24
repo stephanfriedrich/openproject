@@ -46,10 +46,7 @@ module Projects::LifeCycles
     def datepicker_attributes
       {
         inset: true,
-        datepicker_options: {
-          inDialog: Overviews::ProjectPhases::EditDialogComponent::DIALOG_ID,
-          data: { action: "change->overview--project-life-cycles-form#previewForm" }
-        },
+        data: { action: "overview--project-life-cycles-form#previewForm" },
         wrapper_data_attributes: {
           "qa-field-name": qa_field_name
         }
@@ -57,12 +54,28 @@ module Projects::LifeCycles
     end
 
     def start_date_input(form)
-      input_attributes = { name: :start_date, label: attribute_name(:start_date) }
+      data = datepicker_attributes[:data]
+      value = model.start_date || model.start_date_before_type_cast
+      input_attributes = {
+        name: :start_date,
+        label: attribute_name(:start_date),
+        value:,
+        data: data.merge("overview--project-life-cycles-form-target": "startDate"),
+        show_clear_button: value.present?
+      }
       form.text_field **datepicker_attributes, **input_attributes
     end
 
     def finish_date_input(form)
-      input_attributes = { name: :finish_date, label: attribute_name(:finish_date) }
+      data = datepicker_attributes[:data]
+      value = model.finish_date || model.finish_date_before_type_cast
+      input_attributes = {
+        name: :finish_date,
+        label: attribute_name(:finish_date),
+        value:,
+        data: data.merge("overview--project-life-cycles-form-target": "finishDate"),
+        show_clear_button: value.present?
+      }
       form.text_field **datepicker_attributes, **input_attributes
     end
 
@@ -73,9 +86,10 @@ module Projects::LifeCycles
         type: :number,
         inset: true,
         value: model.duration,
-        trailing_visual: { text: { text: I18n.t("datetime.units.day", count: model.duration) } }
+        trailing_visual: { text: { text: I18n.t("datetime.units.day", count: model.duration) } },
+        data: { "overview--project-life-cycles-form-target": "duration" },
+        show_clear_button: model.duration.present?
       }
-      # binding.pry
       form.text_field **input_attributes
     end
   end
