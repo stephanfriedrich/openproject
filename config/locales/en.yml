@@ -1043,6 +1043,7 @@ en:
         definition: "Definition"
         duration: "Duration"
         start_date: "Start date"
+        start_date_caption: "Follows the previous phase."
         finish_date: "Finish date"
       project/phase_definition:
         name: "Name"
@@ -1357,11 +1358,9 @@ en:
           attributes:
             start_date:
               must_be_before_finish_date: "must be before the finish date."
+              non_continuous_dates: "can't be earlier than the previous phase's end date."
             finish_date:
               must_be_after_start_date: "must be after the start date."
-            date_range:
-              non_continuous_dates: "can't be earlier than the previous phase's end date."
-              incomplete: "is incomplete."
         query:
           attributes:
             project:

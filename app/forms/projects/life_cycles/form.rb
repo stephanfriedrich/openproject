@@ -55,13 +55,17 @@ module Projects::LifeCycles
 
     def start_date_input(form)
       data = datepicker_attributes[:data]
-      value = model.start_date || model.start_date_before_type_cast
+      value = model.start_date || default_start_date || model.start_date_before_type_cast
+      disabled = default_start_date.present?
+      caption = disabled ? I18n.t("activerecord.attributes.project/phase.start_date_caption") : nil
       input_attributes = {
         name: :start_date,
         label: attribute_name(:start_date),
+        disabled:,
+        caption:,
         value:,
         data: data.merge("overview--project-life-cycles-form-target": "startDate"),
-        show_clear_button: value.present?
+        show_clear_button: value.present? && !disabled
       }
       form.text_field **datepicker_attributes, **input_attributes
     end
@@ -85,12 +89,20 @@ module Projects::LifeCycles
         label: attribute_name(:duration),
         type: :number,
         inset: true,
+        disabled: true,
         value: model.duration,
         trailing_visual: { text: { text: I18n.t("datetime.units.day", count: model.duration) } },
-        data: { "overview--project-life-cycles-form-target": "duration" },
-        show_clear_button: model.duration.present?
+        data: { "overview--project-life-cycles-form-target": "duration" }
       }
       form.text_field **input_attributes
+    end
+
+    def default_start_date
+      model.project
+           .available_phases
+           .select { it.position < model.position }
+           .filter_map(&:start_date)
+           .last
     end
   end
 end
