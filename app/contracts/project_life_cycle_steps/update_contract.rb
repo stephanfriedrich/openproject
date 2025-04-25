@@ -41,7 +41,7 @@ module ProjectLifeCycleSteps
       return unless model.range_set?
       return if start_after_preceding_phases?
 
-      model.errors.add(:date_range, :non_continuous_dates)
+      model.errors.add(:start_date, :non_continuous_dates)
     end
 
     private
