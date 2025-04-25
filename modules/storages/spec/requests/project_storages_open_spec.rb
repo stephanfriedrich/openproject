@@ -37,9 +37,7 @@ RSpec.describe "projects/:project_id/project_storages/:id/open" do
   end
   let(:project_storage) { create(:project_storage, project:, storage:) }
   let(:route) { "projects/#{project.identifier}/project_storages/#{project_storage.id}/open" }
-  let(:expected_redirect_url) do
-    "#{Setting.protocol}://#{Setting.host_name}#{expected_redirect_path}"
-  end
+  let(:expected_redirect_url) { "#{Setting.protocol}://#{Setting.host_name}#{expected_redirect_path}" }
 
   shared_let(:project) { create(:project) }
   shared_let(:storage) { create(:nextcloud_storage_configured) }
@@ -63,7 +61,7 @@ RSpec.describe "projects/:project_id/project_storages/:id/open" do
               )
             end
 
-            context "html" do
+            describe "html" do
               it "redirects to api_v3_projects_storage_open_url" do
                 get route, {}, { "HTTP_ACCEPT" => "text/html" }
 
@@ -72,7 +70,7 @@ RSpec.describe "projects/:project_id/project_storages/:id/open" do
               end
             end
 
-            context "turbo_stream" do
+            describe "turbo_stream" do
               it "renders an appropirate turbo_stream" do
                 get route, {}, { "HTTP_ACCEPT" => "text/vnd.turbo-stream.html" }
 
@@ -90,7 +88,7 @@ RSpec.describe "projects/:project_id/project_storages/:id/open" do
               Storages::Adapters::Registry.stub("nextcloud.queries.file_info", ->(_) { Failure(error) })
             end
 
-            context "html" do
+            describe "html" do
               context "when error code is unauthorized" do
                 let(:code) { :unauthorized }
 
@@ -136,7 +134,8 @@ RSpec.describe "projects/:project_id/project_storages/:id/open" do
                     .to eq({
                              "op_modal" => {
                                component: "Storages::OpenProjectStorageModalComponent",
-                               parameters: { project_storage_open_url: "/projects/#{project.identifier}/project_storages/#{project_storage.id}/open",
+                               parameters: { project_storage_open_url:
+                                               "/projects/#{project.identifier}/project_storages/#{project_storage.id}/open",
                                              redirect_url: expected_redirect_path,
                                              state: :waiting }
                              }
@@ -145,7 +144,7 @@ RSpec.describe "projects/:project_id/project_storages/:id/open" do
               end
             end
 
-            context "turbo_stream" do
+            describe "turbo_stream" do
               it "responds with 204 no content" do
                 get route, {}, { "HTTP_ACCEPT" => "text/vnd.turbo-stream.html" }
 
@@ -157,7 +156,7 @@ RSpec.describe "projects/:project_id/project_storages/:id/open" do
         end
 
         context "when project_folder_id has not been set by background job yet" do
-          context "html" do
+          describe "html" do
             it "redirects to project overview page with modal flash set up" do
               get route, {}, { "HTTP_ACCEPT" => "text/html" }
 
@@ -167,7 +166,8 @@ RSpec.describe "projects/:project_id/project_storages/:id/open" do
                 .to eq({
                          "op_modal" => {
                            component: "Storages::OpenProjectStorageModalComponent",
-                           parameters: { project_storage_open_url: "/projects/#{project.identifier}/project_storages/#{project_storage.id}/open",
+                           parameters: { project_storage_open_url:
+                                           "/projects/#{project.identifier}/project_storages/#{project_storage.id}/open",
                                          redirect_url: expected_redirect_path,
                                          state: :waiting }
                          }
@@ -175,7 +175,7 @@ RSpec.describe "projects/:project_id/project_storages/:id/open" do
             end
           end
 
-          context "turbo_stream" do
+          describe "turbo_stream" do
             it "responds with 204 no content" do
               get route, {}, { "HTTP_ACCEPT" => "text/vnd.turbo-stream.html" }
 

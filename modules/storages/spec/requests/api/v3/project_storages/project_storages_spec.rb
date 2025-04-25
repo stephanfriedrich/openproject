@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -46,9 +48,7 @@ RSpec.describe "API v3 project storages resource", :webmock, content_type: :json
   shared_let(:project_storage23) { create(:project_storage, project: project2, storage: storage3) }
   shared_let(:project_storage21) { create(:project_storage, project: project2, storage: storage1) }
   shared_let(:project_storage31) { create(:project_storage, project: project3, storage: storage1) }
-  subject(:last_response) do
-    get path
-  end
+  subject(:last_response) { get path }
 
   before { login_as current_user }
 
@@ -252,14 +252,8 @@ RSpec.describe "API v3 project storages resource", :webmock, content_type: :json
     end
 
     before do
-      Storages::Peripherals::Registry.stub(
-        "nextcloud.queries.open_storage",
-        ->(_) { ServiceResult.success(result: location) }
-      )
-      Storages::Peripherals::Registry.stub(
-        "nextcloud.queries.open_file_link",
-        ->(_) { ServiceResult.success(result: location_project_folder) }
-      )
+      Storages::Adapters::Registry.stub("nextcloud.queries.open_storage", ->(_) { Success(location) })
+      Storages::Adapters::Registry.stub("nextcloud.queries.open_file_link", ->(_) { Success(location_project_folder) })
     end
 
     context "as admin" do
@@ -272,19 +266,8 @@ RSpec.describe "API v3 project storages resource", :webmock, content_type: :json
       it_behaves_like "redirect response"
 
       context "if project storage has a configured project folder" do
-        before(:all) do
-          project_storage12.update(
-            project_folder_id: "1337",
-            project_folder_mode: "manual"
-          )
-        end
-
-        after(:all) do
-          project_storage12.update(
-            project_folder_id: nil,
-            project_folder_mode: "inactive"
-          )
-        end
+        before { project_storage12.update(project_folder_id: "1337", project_folder_mode: "manual") }
+        after { project_storage12.update(project_folder_id: nil, project_folder_mode: "inactive") }
 
         let(:path) { api_v3_paths.project_storage_open(project_storage12.id) }
 

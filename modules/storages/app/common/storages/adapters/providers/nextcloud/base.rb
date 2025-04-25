@@ -37,7 +37,7 @@ module Storages
           include Dry::Monads::Result(Results::Error)
 
           def self.call(storage:, auth_strategy:, input_data:)
-            new(storage).call(auth_strategy: auth_strategy, input_data: input_data)
+            new(storage).call(auth_strategy:, input_data:)
           end
 
           def initialize(storage)
