@@ -30,14 +30,32 @@
 
 module Storages
   module Adapters
-    module AdapterTypes
-      include Dry.Types()
+    module Providers
+      module Nextcloud
+        module ProviderResults
+          Capabilities = Data.define(:app_enabled, :group_folder_enabled, :app_version, :group_folder_version) do
+            private_class_method :new
 
-      # We need to move the definition of ParentFolder to mean something like Folder
-      Location = AdapterTypes.Constructor(Peripherals::ParentFolder)
-      StorageFileInstance = AdapterTypes.Instance(Results::StorageFile)
-      SemanticVersionType = AdapterTypes.Constructor(SemanticVersion, SemanticVersion.method(:parse))
-      HTTPVerb = AdapterTypes::Nominal::Symbol.constrained(included_in: %i(post put))
+            def self.build(app_enabled:, group_folder_enabled:, app_version:,
+                           group_folder_version:, contract: CapabilitiesContract.new)
+              contract.call(app_enabled:, group_folder_enabled:, app_version:, group_folder_version:)
+                      .to_monad.fmap { new(**it.to_h) }
+            end
+
+            def self.empty
+              new(app_enabled: false, group_folder_enabled: false, app_version: nil, group_folder_version: nil)
+            end
+
+            alias_method :app_enabled?, :app_enabled
+            alias_method :group_folder_enabled?, :group_folder_enabled
+
+            def with(...)
+              args = to_h.merge(...)
+              self.class.build(**args).either(-> { it }, -> { raise ArgumentError, it.errors })
+            end
+          end
+        end
+      end
     end
   end
 end

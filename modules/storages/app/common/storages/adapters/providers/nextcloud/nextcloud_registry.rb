@@ -57,6 +57,7 @@ module Storages
           end
 
           namespace("queries") do
+            register(:capabilities, Queries::CapabilitiesQuery)
             register(:download_link, Queries::DownloadLinkQuery)
             register(:file_info, Queries::FileInfoQuery)
             register(:file_path_to_id_map, Queries::FilePathToIdMapQuery)
@@ -67,6 +68,10 @@ module Storages
             register(:open_storage, Queries::OpenStorageQuery)
             register(:upload_link, Queries::UploadLinkQuery)
             register(:user, Queries::UserQuery)
+          end
+
+          namespace("validators") do
+            register("connection", Validators::ConnectionValidator)
           end
         end
       end

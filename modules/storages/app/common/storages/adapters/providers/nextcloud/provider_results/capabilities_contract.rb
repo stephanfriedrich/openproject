@@ -30,14 +30,19 @@
 
 module Storages
   module Adapters
-    module AdapterTypes
-      include Dry.Types()
-
-      # We need to move the definition of ParentFolder to mean something like Folder
-      Location = AdapterTypes.Constructor(Peripherals::ParentFolder)
-      StorageFileInstance = AdapterTypes.Instance(Results::StorageFile)
-      SemanticVersionType = AdapterTypes.Constructor(SemanticVersion, SemanticVersion.method(:parse))
-      HTTPVerb = AdapterTypes::Nominal::Symbol.constrained(included_in: %i(post put))
+    module Providers
+      module Nextcloud
+        module ProviderResults
+          class CapabilitiesContract < Dry::Validation::Contract
+            params do
+              required(:app_enabled).filled(:bool)
+              required(:group_folder_enabled).filled(:bool)
+              required(:app_version).maybe(AdapterTypes::SemanticVersionType)
+              required(:group_folder_version).maybe(AdapterTypes::SemanticVersionType)
+            end
+          end
+        end
+      end
     end
   end
 end
