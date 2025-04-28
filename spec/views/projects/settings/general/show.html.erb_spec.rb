@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -30,64 +32,35 @@ require "spec_helper"
 
 RSpec.describe "projects/settings/general/show" do
   include TestSelectorFinders
-  let(:project) { build_stubbed(:project) }
 
-  describe "project copy permission" do
-    before do
-      assign(:project, project)
-      allow(view).to receive(:labelled_tabular_form_for).and_return("")
+  let(:project) { build_stubbed(:project, public:) }
+  let(:user) { build_stubbed(:admin) }
+
+  before do
+    assign(:project, project)
+
+    without_partial_double_verification do
+      allow(view)
+        .to receive(:current_user)
+        .and_return(user)
     end
 
-    context "when project copy is allowed" do
-      before do
-        allow(project).to receive(:copy_allowed?).and_return(true)
-        render
-      end
+    render
+  end
 
-      it "the copy link should be visible" do
-        expect(rendered).to have_test_selector "project-settings--copy"
-      end
-    end
+  context "when project is not public" do
+    let(:public) { false }
 
-    context "when project copy is not allowed" do
-      before do
-        allow(project).to receive(:copy_allowed?).and_return(false)
-        render
-      end
-
-      it "the copy link should not be visible" do
-        expect(rendered).to have_no_css "a.copy"
-      end
+    it "does not show warning banner" do
+      expect(rendered).not_to have_test_selector "op-projects-public-warning"
     end
   end
 
-  context "User.current is admin" do
-    let(:admin) { build_stubbed(:admin) }
+  context "when project is public" do
+    let(:public) { true }
 
-    before do
-      assign(:project, project)
-      allow(User).to receive(:current).and_return(admin)
-      render
-    end
-
-    it "show delete and archive buttons" do
-      expect(rendered).to have_test_selector "project-settings--archive"
-      expect(rendered).to have_test_selector "project-settings--delete"
-    end
-  end
-
-  context "User.current is non-admin" do
-    let(:non_admin) { build_stubbed(:user) }
-
-    before do
-      assign(:project, project)
-      allow(User).to receive(:current).and_return(non_admin)
-      render
-    end
-
-    it "hide delete and archive buttons" do
-      expect(rendered).to have_no_css("li.toolbar-item span.button--text", text: "Archive project")
-      expect(rendered).to have_no_css("li.toolbar-item span.button--text", text: "Delete project")
+    it "shows warning banner" do
+      expect(rendered).to have_test_selector "op-projects-public-warning"
     end
   end
 end
