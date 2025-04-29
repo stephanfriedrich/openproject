@@ -210,24 +210,24 @@ RSpec.describe ProjectLifeCycleSteps::UpdateService, type: :model do
     context "when activating" do
       let(:phases) { [phase, following] }
       let(:phase) { create(:project_phase, project:, date_range: date - 1..date + 1, active: false) }
-      let(:following) { create(:project_phase, project:, date_range: date + 6..date + 8, duration: 3) }
+      let(:following) { create(:project_phase, project:, date_range: date + 6..date + 9, duration: 4) }
 
       it "reschedules starting with date after phase finish date" do
         expect(service.call(active: true)).to be_success
 
-        expect(following).to have_attributes(start_date: date + 2, finish_date: date + 6, duration: 3)
+        expect(following).to have_attributes(start_date: date + 2, finish_date: date + 7, duration: 4)
       end
     end
 
     context "when deactivating" do
       let(:phases) { [phase, following] }
       let(:phase) { create(:project_phase, project:, date_range: date - 1..date + 1, active: true) }
-      let(:following) { create(:project_phase, project:, date_range: date + 6..date + 8, duration: 3) }
+      let(:following) { create(:project_phase, project:, date_range: date + 6..date + 9, duration: 4) }
 
       it "reschedules starting with phase start date" do
         expect(service.call(active: false)).to be_success
 
-        expect(following).to have_attributes(start_date: date - 1, finish_date: date + 1, duration: 3)
+        expect(following).to have_attributes(start_date: date - 1, finish_date: date + 2, duration: 4)
       end
     end
   end
