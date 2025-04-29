@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -35,19 +37,17 @@ FactoryBot.define do
 
     trait :with_start_gate do
       start_gate { true }
-      sequence(:start_gate_name) { |n| "Phase definition Start Gate #{n}" }
+      start_gate_name { name? ? "#{name} Start Gate" : "Phase definition Start Gate #{position}" }
     end
 
     trait :with_finish_gate do
       finish_gate { true }
-      sequence(:finish_gate_name) { |n| "Phase definition Finish Gate #{n}" }
+      finish_gate_name { name? ? "#{name} Finish Gate" : "Phase definition Finish Gate #{position}" }
     end
 
     trait :with_gates do
-      start_gate { true }
-      finish_gate { true }
-      sequence(:start_gate_name) { |n| "Phase definition Start Gate #{n}" }
-      sequence(:finish_gate_name) { |n| "Phase definition Finish Gate #{n}" }
+      with_start_gate
+      with_finish_gate
     end
   end
 end
