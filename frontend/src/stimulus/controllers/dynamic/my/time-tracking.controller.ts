@@ -92,7 +92,6 @@ export default class MyTimeTrackingController extends Controller {
       dayMaxEventRows: 4, // 3 + more link
       eventMinHeight: 30,
       eventMaxStack: 2,
-      eventShortHeight: 31,
       nowIndicator: true,
       businessHours: { daysOfWeek: this.workingDaysValue, startTime: '00:00', endTime: '24:00' },
       hiddenDays: this.hiddenDays(),
