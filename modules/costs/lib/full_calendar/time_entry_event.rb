@@ -50,7 +50,7 @@ module FullCalendar
     def additional_attributes
       {
         hours: time_entry.hours,
-        statusId: time_entry.work_package.status_id,
+        typeId: time_entry.work_package.type_id,
         workPackageId: time_entry.work_package.id,
         workPackageSubject: time_entry.work_package.subject,
         projectId: time_entry.project.id,

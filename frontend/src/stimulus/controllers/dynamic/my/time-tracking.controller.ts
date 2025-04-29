@@ -100,7 +100,7 @@ export default class MyTimeTrackingController extends Controller {
       eventClassNames(arg) {
         return [
           'calendar-time-entry-event',
-          `__hl_status_${arg.event.extendedProps.statusId}`,
+          `__hl_type_${arg.event.extendedProps.typeId}`,
           '__hl_border_top',
           'ellipsis',
         ];
