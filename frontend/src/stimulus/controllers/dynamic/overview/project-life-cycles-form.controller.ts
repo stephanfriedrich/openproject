@@ -52,13 +52,18 @@ export default class ProjectLifeCyclesFormController extends FormPreviewControll
 
     this.previewForm = debounce(() => {
       void this.submit();
-    }, 200);
+    }, 300);
 
     const context = await window.OpenProject.getPluginContext();
     this.timezoneService = context.services.timezone;
 
     document.addEventListener('date-picker:flatpickr-dates-changed', this.handleFlatpickrDatesChangedBound);
     document.addEventListener('turbo:before-stream-render', this.updateFlatpickrCalendarBound);
+
+    const activeElement = document.activeElement as HTMLInputElement;
+    if (activeElement && this.enabledDateInputFields.includes(activeElement)) {
+      this.highlightField(activeElement);
+    }
   }
 
   disconnect() {
@@ -66,12 +71,17 @@ export default class ProjectLifeCyclesFormController extends FormPreviewControll
     document.removeEventListener('turbo:before-stream-render', this.updateFlatpickrCalendarBound);
   }
 
+  onHighlightField(e:Event) {
+    const fieldToHighlight = e.target as HTMLInputElement;
+    if (fieldToHighlight) {
+      this.highlightField(fieldToHighlight);
+    }
+  }
+
   private updateFlatpickrCalendar() {
-    const dates:Date[] = _.compact([
-      this.toDate(this.startDateTarget.value), this.toDate(this.finishDateTarget.value),
-    ]);
+    const dates:Date[] = _.compact(this.dateInputFields.map((field) => this.toDate(field.value)));
     const ignoreNonWorkingDays = false;
-    const mode = this.mode();
+    const mode = this.mode;
 
     document.dispatchEvent(
       new CustomEvent('date-picker:flatpickr-set-values', {
@@ -84,18 +94,71 @@ export default class ProjectLifeCyclesFormController extends FormPreviewControll
     );
   }
 
-  private mode():'single'|'range' {
-    if (this.startDateTarget.disabled) {
-      return 'single';
-    }
+  private get mode():'single'|'range' {
     return 'range';
+  }
+
+  highlightField(field:HTMLInputElement) {
+    this.clearHighLight();
+    field.classList.add('op-datepicker-modal--date-field_current');
+    this.updateFlatpickrCalendar();
+    window.setTimeout(() => {
+      // For mobile, we have to make sure that the active field is scrolled into view after the keyboard is opened
+      field.scrollIntoView(true);
+    }, 300);
   }
 
   handleFlatpickrDatesChanged(event:CustomEvent<{ dates:Date[] }>) {
     const dates = event.detail.dates;
-    this.startDateTarget.value = this.dateToIso(dates[0]);
-    this.finishDateTarget.value = this.dateToIso(dates[1]);
+
+    if (dates.length === 1) {
+      if ((this.highlightedField === this.finishDateTarget) || this.startDateTarget.disabled) {
+        this.finishDateTarget.value = this.dateToIso(dates[0]);
+        if (this.startDateTarget.disabled) {
+          this.clearHighLight();
+        }
+      } else {
+        this.startDateTarget.value = this.dateToIso(dates[0]);
+      }
+    } else {
+      this.dateInputFields
+        .forEach((field, index) => {
+          if (!field.disabled) {
+            field.value = this.dateToIso(dates[index]);
+          }
+        });
+      this.clearHighLight();
+    }
+    this.updateFlatpickrCalendar();
     this.previewForm();
+  }
+
+  private get dateInputFieldsToUpdate():HTMLInputElement[] {
+    if (this.highlightedField) {
+      return [this.highlightedField];
+    }
+    return this.dateInputFields;
+  }
+
+  private get dateInputFields():HTMLInputElement[] {
+    return [this.startDateTarget, this.finishDateTarget];
+  }
+
+  private get enabledDateInputFields():HTMLInputElement[] {
+    return this.dateInputFields.filter((field) => !field.disabled);
+  }
+
+  private get highlightedField():HTMLInputElement|undefined {
+    const field = this.dateInputFields.find(
+      (el) => el.classList.contains('op-datepicker-modal--date-field_current'),
+    );
+
+    return field;
+  }
+
+  private clearHighLight() {
+    this.dateInputFields
+        .forEach((el) => el.classList.remove('op-datepicker-modal--date-field_current'));
   }
 
   private dateToIso(date:Date|null):string {

@@ -72,6 +72,7 @@ export class OpWpDatePickerInstanceComponent extends UntilDestroyedMixin impleme
 
   @Input() public isSchedulable:boolean = true;
   @Input() public dateMode:DateMode;
+  @Input() public minDate:string|null;
 
   @Input() startDateFieldId:string;
   @Input() dueDateFieldId:string;
@@ -220,29 +221,36 @@ export class OpWpDatePickerInstanceComponent extends UntilDestroyedMixin impleme
       this.injector,
       '#flatpickr-input',
       this.currentDates(),
-      {
-        mode: this.dateMode,
-        showMonths: this.deviceService.isMobile ? 1 : 2,
-        inline: true,
-        onReady: (_date, _datestr, instance) => {
-          instance.calendarContainer.classList.add('op-datepicker-modal--flatpickr-instance');
-
-          this.ensureHoveredSelection(instance.calendarContainer);
-        },
-        onChange: this.onFlatpickrChange.bind(this),
-        // eslint-disable-next-line @typescript-eslint/no-misused-promises
-        onDayCreate: async (dObj:Date[], dStr:string, fp:flatpickr.Instance, dayElem:DayElement) => {
-          onDayCreate(
-            dayElem,
-            this.ignoreNonWorkingDays,
-            await this.datePickerInstance?.isNonWorkingDay(dayElem.dateObj),
-            this.isDayDisabled(dayElem),
-          );
-        },
-      },
+      this.datePickerOptions(),
       // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
       this.flatpickrTarget.nativeElement,
     );
+  }
+
+  private datePickerOptions() {
+    const options = {
+      mode: this.dateMode,
+      showMonths: this.deviceService.isMobile ? 1 : 2,
+      inline: true,
+      onReady: (_date, _datestr, instance) => {
+        instance.calendarContainer.classList.add('op-datepicker-modal--flatpickr-instance');
+
+        this.ensureHoveredSelection(instance.calendarContainer);
+      },
+      onChange: this.onFlatpickrChange.bind(this),
+      // eslint-disable-next-line @typescript-eslint/no-misused-promises
+      onDayCreate: async (dObj:Date[], dStr:string, fp:flatpickr.Instance, dayElem:DayElement) => {
+        onDayCreate(
+          dayElem,
+          this.ignoreNonWorkingDays,
+          await this.datePickerInstance?.isNonWorkingDay(dayElem.dateObj),
+          this.isDayDisabled(dayElem),
+        );
+      },
+      minDate: this.minDate,
+    } as flatpickr.Options.Options;
+
+    return _.omitBy(options, (v) => _.isNil(v));
   }
 
   private onFlatpickrChange(dates:Date[], _datestr:string, _instance:flatpickr.Instance) {

@@ -46,7 +46,8 @@ module Projects::LifeCycles
     def datepicker_attributes
       {
         inset: true,
-        data: { action: "overview--project-life-cycles-form#previewForm" },
+        data: { action: "overview--project-life-cycles-form#previewForm " \
+                        "focusin->overview--project-life-cycles-form#onHighlightField" },
         wrapper_data_attributes: {
           "qa-field-name": qa_field_name
         }
@@ -55,16 +56,17 @@ module Projects::LifeCycles
 
     def start_date_input(form)
       data = datepicker_attributes[:data]
-      value = model.start_date || default_start_date || model.start_date_before_type_cast
-      disabled = default_start_date.present?
+      value = model.start_date || model.default_start_date || model.start_date_before_type_cast
+      disabled = model.default_start_date.present?
       caption = disabled ? I18n.t("activerecord.attributes.project/phase.start_date_caption") : nil
       input_attributes = {
         name: :start_date,
         label: attribute_name(:start_date),
+        autofocus: autofocus?(:start_date),
         disabled:,
         caption:,
         value:,
-        data: data.merge("overview--project-life-cycles-form-target": "startDate"),
+        data: data.merge("overview--project-life-cycles-form-target": "startDate assignable"),
         show_clear_button: value.present? && !disabled
       }
       form.text_field **datepicker_attributes, **input_attributes
@@ -76,8 +78,9 @@ module Projects::LifeCycles
       input_attributes = {
         name: :finish_date,
         label: attribute_name(:finish_date),
+        autofocus: autofocus?(:finish_date),
         value:,
-        data: data.merge("overview--project-life-cycles-form-target": "finishDate"),
+        data: data.merge("overview--project-life-cycles-form-target": "finishDate assignable"),
         show_clear_button: value.present?
       }
       form.text_field **datepicker_attributes, **input_attributes
@@ -97,12 +100,14 @@ module Projects::LifeCycles
       form.text_field **input_attributes
     end
 
-    def default_start_date
-      model.project
-           .available_phases
-           .select { it.position < model.position }
-           .filter_map(&:start_date)
-           .last
+    def autofocus?(field_name)
+      start_date_blank = model.start_date.blank? && model.default_start_date.blank?
+      case field_name
+      when :start_date
+        start_date_blank
+      when :finish_date
+        !start_date_blank && model.finish_date.blank?
+      end
     end
   end
 end

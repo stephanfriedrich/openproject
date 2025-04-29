@@ -105,4 +105,19 @@ class Project::Phase < ApplicationRecord
 
     Day.working.from_range(from: start_date, to: finish_date).count
   end
+
+  def set_default_start_date
+    self.start_date = default_start_date if default_start_date.present?
+  end
+
+  def default_start_date
+    return @default_start_date if defined?(@default_start_date)
+
+    @default_start_date = project
+     .available_phases
+     .select { it.position < position }
+     .filter_map(&:finish_date)
+     .last
+     &.next_day
+  end
 end

@@ -59,13 +59,13 @@ export class DatePicker {
     readonly injector:Injector,
     private datepickerElemIdentifier:string,
     private date:Date|Date[]|string[]|string,
-    private options:flatpickr.Options.Options,
+    private options:FlatpickrOptions,
     private datepickerTarget:HTMLElement|null,
   ) {
     void this.initialize(options);
   }
 
-  private initialize(options:flatpickr.Options.Options) {
+  private initialize(options:FlatpickrOptions) {
     this.weekdaysPromise = this
       .weekdaysService
       .loadWeekdays()
