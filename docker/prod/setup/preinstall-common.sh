@@ -40,8 +40,6 @@ echo 'deb http://apt.postgresql.org/pub/repos/apt/ bookworm-pgdg main' > /etc/ap
 apt-get update -qq
 apt-get install -yq --no-install-recommends \
 	libpq-dev \
-	postgresql-client-$CURRENT_PGVERSION \
-	postgresql-client-$NEXT_PGVERSION \
 	libpq5 \
 	libffi8 \
 	unrtf \
@@ -52,6 +50,10 @@ apt-get install -yq --no-install-recommends \
 	libclang-dev \
 	libjemalloc2 \
 	git
+
+for version in $PGVERSION_CHOICES ; do
+	apt-get install -yq --no-install-recommends postgresql-client-$version
+done
 
 # Specifics for BIM edition
 if [ ! "$BIM_SUPPORT" = "false" ]; then
