@@ -46,6 +46,14 @@ RSpec.describe "Edit project phases on project overview page", :js, with_flag: {
     overview_page.visit_page
   end
 
+  def formatted_date_range(life_cycle)
+    if life_cycle.range_set?
+      [life_cycle.start_date, life_cycle.finish_date].map { I18n.l(it) }.join("\n-\n")
+    else
+      "-"
+    end
+  end
+
   describe "with the dialog open" do
     context "when all LifeCycleSteps are blank" do
       before do
@@ -71,14 +79,15 @@ RSpec.describe "Edit project phases on project overview page", :js, with_flag: {
 
     context "when all LifeCycleSteps have a value" do
       it "shows all the Project::Phases and updates them correctly" do
-        # Set a value for life_cycle_initiating
-        dialog = overview_page.open_edit_dialog_for_life_cycle(life_cycle_initiating)
+        life_cycle_initiating_was = life_cycle_initiating.dup
+        life_cycle_planning_was = life_cycle_planning.dup
+        life_cycle_executing_was = life_cycle_executing.dup
+        life_cycle_closing_was = life_cycle_closing.dup
 
-        expect_angular_frontend_initialized
+        # Set a value for life_cycle_initiating
+        dialog = overview_page.open_edit_dialog_for_life_cycle(life_cycle_initiating, wait_angular: true)
 
         dialog.expect_input_for(life_cycle_initiating)
-
-        initiating_dates = [start_date - 1.week, start_date]
 
         retry_block do
           # Retrying due to a race condition between filling the input vs submitting the form preview.
@@ -86,7 +95,7 @@ RSpec.describe "Edit project phases on project overview page", :js, with_flag: {
           dialog.set_date_for(values: original_dates)
 
           page.driver.clear_network_traffic
-          dialog.set_date_for(values: initiating_dates)
+          dialog.set_date_for(values: [start_date - 1.week, start_date])
 
           dialog.expect_caption(text: "Duration: 8 working days")
           # Ensure that only 1 ajax request is triggered after setting the date range.
@@ -98,13 +107,16 @@ RSpec.describe "Edit project phases on project overview page", :js, with_flag: {
         dialog.expect_closed
 
         # Sidebar is refreshed with the updated values
-        overview_page.within_life_cycle_container(life_cycle_initiating) do
-          expect(page).to have_text initiating_dates.map { I18n.l(it) }.join("\n-\n")
+        project_life_cycles.each do |life_cycle|
+          life_cycle.reload
+
+          overview_page.within_life_cycle_container(life_cycle) do
+            expect(page).to have_text formatted_date_range(life_cycle)
+          end
         end
 
         # Clear the value of life_cycle_planning
-        dialog = overview_page.open_edit_dialog_for_life_cycle(life_cycle_planning)
-        expect_angular_frontend_initialized
+        dialog = overview_page.open_edit_dialog_for_life_cycle(life_cycle_planning, wait_angular: true)
 
         dialog.expect_input_for(life_cycle_planning)
         dialog.clear_date
@@ -114,24 +126,17 @@ RSpec.describe "Edit project phases on project overview page", :js, with_flag: {
         dialog.expect_closed
 
         # Sidebar is refreshed with the updated values
-        ready_for_planning_dates = [
-          life_cycle_planning.start_date,
-          life_cycle_planning.finish_date
-        ].map { I18n.l(it) }.join("\n-\n")
+        project_life_cycles.each do |life_cycle|
+          life_cycle.reload
 
-        overview_page.within_life_cycle_container(life_cycle_planning) do
-          expect(page).to have_no_text ready_for_planning_dates
+          overview_page.within_life_cycle_container(life_cycle) do
+            expect(page).to have_text formatted_date_range(life_cycle)
+          end
         end
 
         activity_page.visit!
 
         activity_page.show_details
-
-        life_cycle_initiating_was = life_cycle_initiating.dup
-        life_cycle_initiating.reload
-
-        life_cycle_planning_was = life_cycle_planning.dup
-        life_cycle_planning.reload
 
         activity_page.within_journal(number: 1) do
           activity_page.expect_activity("Initiating changed from " \
@@ -143,6 +148,18 @@ RSpec.describe "Edit project phases on project overview page", :js, with_flag: {
           activity_page.expect_activity("Planning date deleted " \
                                         "#{I18n.l life_cycle_planning_was.start_date} - " \
                                         "#{I18n.l life_cycle_planning_was.finish_date}")
+
+          activity_page.expect_activity("Executing changed from " \
+                                        "#{I18n.l life_cycle_executing_was.start_date} - " \
+                                        "#{I18n.l life_cycle_executing_was.finish_date} to " \
+                                        "#{I18n.l life_cycle_executing.start_date} - " \
+                                        "#{I18n.l life_cycle_executing.finish_date}")
+
+          activity_page.expect_activity("Closing changed from " \
+                                        "#{I18n.l life_cycle_closing_was.start_date} - " \
+                                        "#{I18n.l life_cycle_closing_was.finish_date} to " \
+                                        "#{I18n.l life_cycle_closing.start_date} - " \
+                                        "#{I18n.l life_cycle_closing.finish_date}")
         end
       end
     end
@@ -156,9 +173,7 @@ RSpec.describe "Edit project phases on project overview page", :js, with_flag: {
       end
 
       it "allows saving and closing the dialog without the custom field validation to interfere" do
-        dialog = overview_page.open_edit_dialog_for_life_cycle(life_cycle_initiating)
-
-        expect_angular_frontend_initialized
+        dialog = overview_page.open_edit_dialog_for_life_cycle(life_cycle_initiating, wait_angular: true)
 
         # Saving the dialog is successful
         dialog.submit
