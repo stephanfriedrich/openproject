@@ -38,6 +38,7 @@ RSpec.describe EnterpriseEdition::BannerComponent, type: :component do
   let(:href) { "https://www.example.org" }
   let(:component_test_selector) { "op-enterprise-banner" }
   let(:features) { nil }
+  let(:plan) { :basic }
   let(:enforce_available_locales) { I18n.config.enforce_available_locales }
   let(:i18n_upsell) do
     {
@@ -83,6 +84,11 @@ RSpec.describe EnterpriseEdition::BannerComponent, type: :component do
     allow(OpenProject::Static::Links)
       .to receive(:links)
             .and_return(static_links)
+
+    allow(OpenProject::Token)
+      .to receive(:lowest_plan_for)
+      .with(:some_enterprise_feature)
+      .and_return(plan)
 
     I18n.config.enforce_available_locales = !enforce_available_locales
 
