@@ -90,6 +90,7 @@ export default class MyTimeTrackingController extends Controller {
       defaultTimedEventDuration: this.DEFAULT_TIMED_EVENT_DURATION,
       allDayContent: '',
       dayMaxEventRows: 4, // 3 + more link
+      eventShortHeight: 45,
       eventMinHeight: 30,
       eventMaxStack: 2,
       nowIndicator: true,
