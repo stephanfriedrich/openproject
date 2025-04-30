@@ -34,7 +34,7 @@ module ProjectLifeCycleSteps
 
     delegate :project, to: :model
 
-    def writable_attributes = %w[start_date finish_date active]
+    def writable_attributes = %w[start_date finish_date]
 
     def validate_start_after_preceeding_phases
       return unless model.active?
