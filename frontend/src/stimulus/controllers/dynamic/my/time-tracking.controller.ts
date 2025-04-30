@@ -107,6 +107,14 @@ export default class MyTimeTrackingController extends Controller {
       },
       eventContent: (arg) => {
         let timeDetails = '';
+        let duration = arg.event.extendedProps.hours as number;
+
+        if (arg.isResizing && arg.event.start && arg.event.end) {
+          const startMoment = toMoment(arg.event.start, this.calendar);
+          const endMoment = toMoment(arg.event.end, this.calendar);
+
+         duration = moment.duration(endMoment.diff(startMoment)).asHours();
+        }
 
         if (!arg.event.allDay) {
           const time = `${toMoment(arg.event.start!, this.calendar).format('LT')} - ${toMoment(arg.event.end!, this.calendar).format('LT')}`;
@@ -116,7 +124,7 @@ export default class MyTimeTrackingController extends Controller {
         return {
           html: `
            <div class="fc-event-main-frame">
-             <div class="fc-event-time mb-1">${this.displayDuration(arg.event.extendedProps.hours as number)}</div>
+             <div class="fc-event-time mb-1">${this.displayDuration(duration)}</div>
              <div class="fc-event-title-container">
                 <div class="fc-event-title mb-2" title="${arg.event.extendedProps.workPackageSubject}">
                   <a class="Link--primary Link" href="${this.pathHelper.workPackageShortPath(arg.event.extendedProps.workPackageId as string)}">
