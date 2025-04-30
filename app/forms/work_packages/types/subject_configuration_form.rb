@@ -56,7 +56,7 @@ module WorkPackages
             value: model.pattern,
             suggestions: model.suggestions,
             label: I18n.t("types.edit.subject_configuration.pattern.label"),
-            caption: I18n.t("types.edit.subject_configuration.pattern.caption"),
+            caption: pattern_input_caption,
             required: true,
             validation_message: validation_message_for(:patterns)
           )
@@ -81,6 +81,20 @@ module WorkPackages
 
       def validation_message_for(attribute)
         model.validation_errors.messages_for(attribute).to_sentence.presence
+      end
+
+      def pattern_input_caption
+        I18n.t(
+          "types.edit.subject_configuration.pattern.caption_with_supported_attributes_link",
+          link: make_link(
+            ::OpenProject::Static::Links.url_for(:enterprise_features, :work_package_subject_generation),
+            I18n.t("types.edit.subject_configuration.pattern.supported_attributes_link")
+          )
+        ).html_safe
+      end
+
+      def make_link(href, link_text)
+        render(Primer::Beta::Link.new(href:, target: "_blank")) { link_text }
       end
     end
   end

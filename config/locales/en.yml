@@ -689,12 +689,13 @@ en:
           caption: "Define a pattern using referenced attributes and text to automatically generate work package subjects. Users will not be able to manually edit subjects."
         pattern:
           label: "Subject pattern"
-          caption: "Add text or type / to search for an attribute. You can add spaces to separate them."
+          caption_with_supported_attributes_link: Create patterns by adding text, or type "/" to search for %{link}.
           headings:
             work_package: "Work package"
             parent: "Parent"
             project: "Project"
           insert_as_text: "No attributes found. Add as text: \"%{word}\""
+          supported_attributes_link: "supported attributes"
       export_configuration:
         tab: "Generate PDF"
         intro: "Select which templates from those that are available you would like to enable for this type. The template determines the design and attributes visible in the exported PDF of a work package using this type. The first template on the list is selected by default."
