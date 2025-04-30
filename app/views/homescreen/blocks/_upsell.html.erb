@@ -1,45 +1,26 @@
-<div class="widget-box--description">
-  <%= image_tag "enterprise-add-on.svg", role: "presentation", class: "widget-box--blocks--upsell-image" %>
+<div class="widget-box--blocks--upsell-container"
+     style="background-image: url(<%= image_path("enterprise/homescreen.png") %>)">
   <div class="widget-box--blocks--upsell-text">
-    <div class="widget-box--blocks--upsell-title">
-      <%= spot_icon("enterprise-addons") %>
-      <span><%= t("homescreen.blocks.upsell.title") %></span>
-    </div>
+    <%=
+      render(Primer::OpenProject::FlexLayout.new(align_items: :center, mb: 3)) do |title_flex|
+        title_flex.with_column do
+          render(Primer::Beta::Octicon.new(icon: :"op-enterprise-addons",
+                                           size: :medium,
+                                           classes: "upsell-colored"))
+        end
+
+        title_flex.with_column(ml: 2) do
+          render(Primer::Beta::Heading.new(tag: :h2)) { t("ee.upsell.plans_title") }
+        end
+      end
+    %>
+
     <p class="widget-box--blocks--upsell-description">
-      <%= t("js.admin.enterprise.upsell.text") %>
+      <%= t("ee.upsell.homescreen_description") %>
     </p>
-
-    <p>
-      <b><%= t("js.admin.enterprise.upsell.become_hero") %></b> <%= t("js.admin.enterprise.upsell.you_contribute") %>
-    </p>
-
-    <p>
-      <b><%= t("js.admin.enterprise.upsell.confidence") %></b>
+    <p class="widget-box--blocks--upsell-description">
+      <%= t("ee.upsell.homescreen_subline") %>
     </p>
   </div>
-</div>
-
-<div class="widget-box--blocks--upsell-buttons">
-  <%= link_to "#{OpenProject::Static::Links.links[:upsell][:href]}/?utm_source=unknown&utm_medium=community-edition&utm_campaign=home-screen",
-              class: "button--link widget-box--blocks--upsell-info-button",
-              target: "_blank",
-              rel: "noopener" do %>
-    <%= spot_icon("external-link") %>
-    <span class="button--text"><%= t(:label_more_information) %></span>
-
-  <% end %>
-
-  <%= link_to(
-        OpenProject::Static::Links.links[:pricing][:href],
-        class: "button -primary",
-        target: "_blank",
-        rel: "noopener"
-      ) do %>
-    <%= spot_icon("enterprise-addons") %>
-    <span class="button--text"><%= t("admin.enterprise.buttons.upgrade") %></span>
-  <% end %>
-
-  <% if current_user.admin? %>
-    <%= link_to t("js.admin.enterprise.upsell.button_start_trial"), enterprise_path, class: "button -primary" %>
-  <% end %>
+  <%= render EnterpriseEdition::UpsellButtonsComponent.new(nil) %>
 </div>
