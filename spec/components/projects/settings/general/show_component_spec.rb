@@ -72,7 +72,7 @@ RSpec.describe Projects::Settings::General::ShowComponent, type: :component do
 
     it "renders field" do
       expect(render_component).to have_element "opce-ckeditor-augmented-textarea",
-                                               "data-test-selector": "augmented-text-area-description"
+                                               "data-test-selector": "augmented-text-area-status_explanation"
     end
   end
 
