@@ -4,11 +4,6 @@
   .op-fc-wrapper
     flex-grow: 1
 
-    .fc-timegrid-event-short
-      .fc-event-time::after
-        content: ''
-        display: none
-
     .calendar-time-entry-event
       display: flex
       user-select: none
@@ -21,6 +16,18 @@
 
       .fc-event-time
         color: var(--fgColor-default)
+
+      &.fc-timegrid-event-short, &.fc-daygrid-block-event
+        // background: hotpink !important
+        .fc-event-time::after
+          content: ''
+          display: none
+
+        .fc-project-name
+          display: none
+
+        .fc-entry-time
+          display: none
 
     .fc-popover
       background: var(--fc-page-bg-color) !important

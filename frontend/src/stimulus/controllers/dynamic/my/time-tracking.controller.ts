@@ -90,7 +90,9 @@ export default class MyTimeTrackingController extends Controller {
       defaultTimedEventDuration: this.DEFAULT_TIMED_EVENT_DURATION,
       allDayContent: '',
       dayMaxEventRows: 4, // 3 + more link
-      eventShortHeight: 45,
+      // We want everything including 90 minutes to be short style ... If we set it to 90,
+      // 2 hours is also considered short ... So, magic number at 80 ... Don't ask me why
+      eventShortHeight: 80,
       eventMinHeight: 30,
       eventMaxStack: 2,
       nowIndicator: true,
@@ -118,7 +120,7 @@ export default class MyTimeTrackingController extends Controller {
 
         if (!arg.event.allDay) {
           const time = `${toMoment(arg.event.start!, this.calendar).format('LT')} - ${toMoment(arg.event.end!, this.calendar).format('LT')}`;
-          timeDetails = `<div class="color-fg-muted mt-2" title="${time}">${time}</div>`;
+          timeDetails = `<div class="fc-entry-time color-fg-muted mt-2" title="${time}">${time}</div>`;
         }
 
         return {
@@ -131,7 +133,7 @@ export default class MyTimeTrackingController extends Controller {
                     ${arg.event.extendedProps.workPackageSubject}
                   </a>
                </div>
-               <div class="color-fg-muted" title="${arg.event.extendedProps.projectName}">${arg.event.extendedProps.projectName}</div>
+               <div class="fc-project-name color-fg-muted" title="${arg.event.extendedProps.projectName}">${arg.event.extendedProps.projectName}</div>
                ${timeDetails}
              </div>
            </div>`,
