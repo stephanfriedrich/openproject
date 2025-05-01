@@ -68,7 +68,7 @@ class ServiceResult
     self.dependent_results = dependent_results
   end
 
-  alias success? :success
+  alias success? success
 
   def failure?
     !success?
