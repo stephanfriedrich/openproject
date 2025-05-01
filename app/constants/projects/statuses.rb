@@ -32,7 +32,7 @@ module Projects
   module Statuses
     Status = Data.define(:code, :color, :icon) do
       def id = code&.to_s || :none
-      def value = code.to_s
+      def value = code&.to_s
     end
 
     NOT_SET = Status.new(code: nil, color: Color.new(hexcode: "#24292F"), icon: "issue-draft")

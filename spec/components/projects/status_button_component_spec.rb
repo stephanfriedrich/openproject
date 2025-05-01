@@ -89,7 +89,9 @@ RSpec.describe Projects::StatusButtonComponent, type: :component do
 
         expect(page).to have_menu do
           expect(page).to have_selector :menuitem, count: 7
-          expect(page).to have_selector :menuitem, text: "Not set", aria: { current: true }
+          expect(page).to (have_selector :menuitem, text: "Not set", aria: { current: true } do |link|
+            expect(link[:"data-turbo-method"]).to eq "delete"
+          end)
           expect(page).to have_selector :menuitem, text: "On track"
           expect(page).to have_selector :menuitem, text: "At risk"
           expect(page).to have_selector :menuitem, text: "Not started"
@@ -118,7 +120,9 @@ RSpec.describe Projects::StatusButtonComponent, type: :component do
         expect(page).to have_menu do
           expect(page).to have_selector :menuitem, count: 7
           expect(page).to have_selector :menuitem, text: "Not set"
-          expect(page).to have_selector :menuitem, text: "On track", aria: { current: true }
+          expect(page).to (have_selector :menuitem, text: "On track", aria: { current: true } do |link|
+            expect(link[:"data-turbo-method"]).to eq "put"
+          end)
           expect(page).to have_selector :menuitem, text: "At risk"
           expect(page).to have_selector :menuitem, text: "Not started"
           expect(page).to have_selector :menuitem, text: "Finished"

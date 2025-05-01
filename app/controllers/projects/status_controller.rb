@@ -36,9 +36,19 @@ class Projects::StatusController < ApplicationController
   before_action :authorize
 
   def update
+    change_status_action(params.fetch(:status_code).presence)
+  end
+
+  def destroy
+    change_status_action(nil)
+  end
+
+  private
+
+  def change_status_action(status_code)
     call = Projects::UpdateService
       .new(model: @project, user: current_user)
-      .call(status_code: params.fetch(:status_code).presence)
+      .call(status_code:)
 
     if call.success?
       @project = call.result
@@ -50,8 +60,6 @@ class Projects::StatusController < ApplicationController
       end
     end
   end
-
-  private
 
   def respond_with_update_status_button
     message = t(:notice_successful_update)

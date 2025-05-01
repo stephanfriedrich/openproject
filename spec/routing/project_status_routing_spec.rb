@@ -38,4 +38,12 @@ RSpec.describe Projects::StatusController do
       )
     end
   end
+
+  describe "destroy" do
+    it do
+      expect(delete("/projects/123/status")).to route_to(
+        controller: "projects/status", action: "destroy", project_id: "123"
+      )
+    end
+  end
 end

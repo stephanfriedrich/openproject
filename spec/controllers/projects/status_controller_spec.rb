@@ -34,24 +34,24 @@ RSpec.describe Projects::StatusController do
   shared_let(:user) { create(:admin) }
   current_user { user }
 
+  let(:project) { build_stubbed(:project) }
+  let(:service_result) { ServiceResult.success(result: project) }
+
+  before do
+    allow(Project)
+      .to receive(:find)
+            .with(project.identifier)
+            .and_return(project)
+
+    update_service = instance_double(Projects::UpdateService, call: service_result)
+
+    allow(Projects::UpdateService)
+      .to receive(:new)
+            .with(user:, model: project)
+            .and_return(update_service)
+  end
+
   describe "PUT #update" do
-    let(:project) { build_stubbed(:project) }
-    let(:service_result) { ServiceResult.success(result: project) }
-
-    before do
-      allow(Project)
-        .to receive(:find)
-              .with(project.identifier)
-              .and_return(project)
-
-      update_service = instance_double(Projects::UpdateService, call: service_result)
-
-      allow(Projects::UpdateService)
-        .to receive(:new)
-              .with(user:, model: project)
-              .and_return(update_service)
-    end
-
     context "when service call succeeds" do
       context "with valid status_code param" do
         context "with a text/html request" do
@@ -130,6 +130,54 @@ RSpec.describe Projects::StatusController do
 
         expect(response).not_to be_successful
         expect(response).to have_http_status :bad_request
+      end
+    end
+  end
+
+  describe "DELETE #destroy" do
+    context "when service call succeeds" do
+      context "with a text/html request" do
+        it "redirects back or to project show" do
+          delete :destroy, params: { project_id: project }
+
+          expect(response).to redirect_to project_path(project)
+          expect(flash[:notice]).to eq I18n.t(:notice_successful_update)
+        end
+      end
+
+      context "with a turbo stream request" do
+        it "renders turbo streams updating Projects::StatusButtonComponent and flash action" do
+          delete :destroy, params: { project_id: project }, format: :turbo_stream
+
+          expect(response).to be_successful
+          expect(assigns(:project)).to eq project
+          expect(response).to have_turbo_stream action: "update", target: "projects-status-button-component"
+          expect(response).to have_turbo_stream action: "flash", target: "op-primer-flash-component"
+        end
+      end
+    end
+
+    context "when service call fails" do
+      let(:service_result) { ServiceResult.failure(result: project, message: "Custom Field 1 must not be blank") }
+
+      context "with a text/html request" do
+        it "redirects back or to project show" do
+          delete :destroy, params: { project_id: project }
+
+          expect(response).to redirect_to project_path(project)
+          expect(flash[:error]).to start_with I18n.t(:notice_unsuccessful_update_with_reason, reason: "")
+        end
+      end
+
+      context "with a turbo stream request" do
+        it "renders turbo stream flash action" do
+          delete :destroy, params: { project_id: project }, format: :turbo_stream
+
+          expect(response).not_to be_successful
+          expect(response).to have_http_status :unprocessable_entity
+          expect(assigns(:project)).to eq project
+          expect(response).to have_turbo_stream action: "flash", target: "op-primer-flash-component"
+        end
       end
     end
   end
