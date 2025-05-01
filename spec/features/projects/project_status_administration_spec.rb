@@ -75,15 +75,12 @@ RSpec.describe "Projects status administration", :js do
     # Check that the status has been set correctly
     visit project_settings_general_path(project_id: "new-project")
 
-    status_field.expect_selected "ON TRACK"
     status_description.expect_value "Everything is fine at the start"
 
-    status_field.select_option "Off track"
     status_description.set_markdown "Oh no"
 
-    click_button "Update status"
+    click_button "Update status description"
 
-    status_field.expect_selected "OFF TRACK"
     status_description.expect_value "Oh no"
   end
 end
