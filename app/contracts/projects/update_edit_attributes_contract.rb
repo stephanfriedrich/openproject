@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 #-- copyright
 # OpenProject is an open source project management software.
 # Copyright (C) the OpenProject GmbH
@@ -26,24 +28,12 @@
 # See COPYRIGHT and LICENSE files for more details.
 #++
 
-class Projects::IdentifierController < ApplicationController
-  before_action :find_project_by_project_id
-  before_action :authorize
+module Projects
+  class UpdateEditAttributesContract < UpdateContract
+    def valid?(context = :update) = super
 
-  def show; end
+    # def writable_attributes = super.grep_v(/^custom_field_/)
 
-  def update
-    service_call = Projects::UpdateService
-                     .new(user: current_user,
-                          model: @project,
-                          contract_class: Projects::UpdateEditAttributesContract)
-                     .call(identifier: permitted_params.project[:identifier])
-
-    if service_call.success?
-      flash[:notice] = I18n.t(:notice_successful_update)
-      redirect_to project_settings_general_path(@project)
-    else
-      render action: "show", status: :unprocessable_entity
-    end
+    # def manage_permission = :edit_project
   end
 end
