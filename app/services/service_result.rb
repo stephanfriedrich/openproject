@@ -35,10 +35,10 @@ class ServiceResult
   attr_accessor :success,
                 :result,
                 :errors,
-                :message,
                 :dependent_results
 
-  attr_writer :state
+  attr_writer :message,
+              :state
 
   # Creates a successful ServiceResult.
   def self.success(errors: nil,
