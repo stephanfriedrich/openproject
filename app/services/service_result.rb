@@ -41,38 +41,16 @@ class ServiceResult
               :state
 
   # Creates a successful ServiceResult.
-  def self.success(errors: nil,
-                   message: nil,
-                   message_type: nil,
-                   state: nil,
-                   dependent_results: [],
-                   result: nil)
-    new(success: SUCCESS,
-        errors:,
-        message:,
-        message_type:,
-        state:,
-        dependent_results:,
-        result:)
+  def self.success(**)
+    new(**, success: SUCCESS)
   end
 
   # Creates a failed ServiceResult.
-  def self.failure(errors: nil,
-                   message: nil,
-                   message_type: nil,
-                   state: nil,
-                   dependent_results: [],
-                   result: nil)
-    new(success: FAILURE,
-        errors:,
-        message:,
-        message_type:,
-        state:,
-        dependent_results:,
-        result:)
+  def self.failure(**)
+    new(**, success: FAILURE)
   end
 
-  def initialize(success: false,
+  def initialize(success: FAILURE,
                  errors: nil,
                  message: nil,
                  message_type: nil,
