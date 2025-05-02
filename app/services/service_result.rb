@@ -28,28 +28,70 @@
 # See COPYRIGHT and LICENSE files for more details.
 #++
 
+##
+# Represents the result of a call to a Service.
+#
+# @example
+#   result = Projects::UpdateService
+#     .new(user: current_user, model: @project)
+#     .call(permitted_params.project)
+#   result.success? # => true if the Service call was successful.
+#   result.result # => #<Project id: 1011>
+#   result.errors # => #<ActiveModel::Errors []>
+#
 class ServiceResult
   SUCCESS = true
   FAILURE = false
+  private_constant :SUCCESS, :FAILURE
 
-  attr_accessor :success,
-                :result,
-                :errors,
-                :dependent_results
+  # @return [Boolean] whether the Service call was successful.
+  attr_accessor :success
 
-  attr_writer :message,
-              :state
+  # Returns the result of the Service call. In typical usage this will be a model, i.e. an {ActiveRecord::Base}
+  # descendant.
+  #
+  # @return [Object, nil] the Service call result object. This can also be nil.
+  attr_accessor :result
+
+  # @return [ActiveModel::Errors] errors resulting from the Service call.
+  attr_accessor :errors
+
+  # @return [Array<ServiceResult>] all dependent ServiceResults - by virtue of the Service calling other services.
+  attr_accessor :dependent_results
+
+  # @param [String] message an error message associated with the Service call.
+  attr_writer :message
+
+  # @param [State] state the Service State object.
+  attr_writer :state
 
   # Creates a successful ServiceResult.
+  #
+  # @param (see #initialize)
+  # @return (see #initialize)
   def self.success(**)
     new(**, success: SUCCESS)
   end
 
+  ##
   # Creates a failed ServiceResult.
+  #
+  # @param (see #initialize)
+  # @return (see #initialize)
   def self.failure(**)
     new(**, success: FAILURE)
   end
 
+  ##
+  # @api private
+  # @note Prefer using {.success} or {.failure} factory methods to calling {ServiceResult.new}.
+  #
+  # @param errors [ActiveModel::Errors, nil] errors resulting from the Service call.
+  # @param message [String, nil] an error message associated with the Service call.
+  # @param message_type [#to_sym, nil] the type of error message when displayed as a Controller flash message.
+  # @param state [Shared::ServiceState, nil] the Service State object.
+  # @param dependent_results [Array<ServiceResult>] any dependent ServiceResults.
+  # @param result [Object, nil] the result of the Service call.
   def initialize(success: FAILURE,
                  errors: nil,
                  message: nil,
@@ -68,15 +110,22 @@ class ServiceResult
     self.dependent_results = dependent_results
   end
 
+  # @see failure?
+  # @return [Boolean] whether the Service call succeeded.
   alias success? success
 
+  # @see success?
+  # @return [Boolean] whether the Service call failed.
   def failure?
     !success?
   end
 
   ##
-  # Merge another service result into this instance
-  # allowing optionally to skip updating its service
+  # Merge another ServiceResult into this instance, optionally allowing its {#success} to be ignored.
+  #
+  # @param other [ServiceResult] the other ServiceResult.
+  # @param without_success [Boolean] whether to ignore the {#success} of the other ServiceResult.
+  # @return [void]
   def merge!(other, without_success: false)
     merge_success!(other) unless without_success
     merge_errors!(other)
@@ -84,26 +133,40 @@ class ServiceResult
   end
 
   ##
-  # Print messages to flash
+  # Print messages to the Controller's flash.
+  #
+  # @param flash [ActionDispatch::Flash::FlashHash]
+  # @return [void]
   def apply_flash_message!(flash)
     if message
       flash[message_type] = message
     end
   end
 
+  ##
+  # Returns all {#result}s, including from dependent ServiceResults.
+  #
+  # @return [Array] all results
   def all_results
     dependent_results.map(&:result).tap do |results|
       results.unshift result unless result.nil?
     end
   end
 
+  ##
+  # Returns all {#errors}, including from dependent ServiceResults.
+  #
+  # @return [Array<ActiveModel::Errors>] all errors
   def all_errors
     [errors] + dependent_results.map(&:errors)
   end
 
   ##
-  # Test whether the returned errors respond
-  # to the search key
+  # Test whether the returned errors include the error key.
+  #
+  # @param attribute [:base, Symbol] the attribute.
+  # @param error_key [Symbol] the type of the error.
+  # @return [Boolean] whether the returned errors include the error key.
   def includes_error?(attribute, error_key)
     all_errors.any? do |error|
       error.symbols_for(attribute).include?(error_key)
@@ -111,10 +174,10 @@ class ServiceResult
   end
 
   ##
-  # Collect all present errors for the given result
-  # and dependent results.
+  # Returns dependent ServiceResults with errors, and optionally self, if self has errors.
   #
-  # Returns a map of the service result to the error object
+  # @param include_self [Boolean] whether to include self, if self has errors.
+  # @return [Array<ServiceResult>] all ServiceResult with errors.
   def results_with_errors(include_self: true)
     results =
       if include_self
@@ -126,10 +189,15 @@ class ServiceResult
     results.reject { |call| call.errors.empty? }
   end
 
+  # @return [Array<ServiceResult>] self and dependent ServiceResults.
   def self_and_dependent
     [self] + dependent_results
   end
 
+  ##
+  # Adds a dependent ServiceResult.
+  #
+  # @param [ServiceResult] dependent the dependent ServiceResult to add.
   def add_dependent!(dependent)
     merge_success!(dependent)
 
@@ -140,21 +208,45 @@ class ServiceResult
     self.dependent_results += inner_results
   end
 
+  ##
+  # Callback to be executed if the Service call succeeds.
+  #
+  # @yield block to be called on success.
+  # @return [self]
   def on_success(&)
     tap(&) if success?
     self
   end
 
+  ##
+  # Callback to be executed if the Service call fails.
+  #
+  # @yield block to be called on failure.
+  # @return [self]
   def on_failure(&)
     tap(&) if failure?
     self
   end
 
+  ##
+  # Iterates exactly once, passing the result to the block, if the Service call succeeds.
+  #
+  # @see Enumerable#each
+  # @yield block to be called on success.
+  # @yieldparam result [Object, nil] the result of the Service call.
+  # @return [self]
   def each
     yield result if success?
     self
   end
 
+  ##
+  # Returns a new ServiceResult whose {#result} is the return value from the block.
+  # Iterates exactly once if the Service call succeeds.
+  #
+  # @yield block to be called on success.
+  # @yieldparam result [Object, nil] the result of the Service call.
+  # @return [ServiceResult] a new ServiceResult with the result.
   def map
     return self if failure?
 
@@ -163,6 +255,8 @@ class ServiceResult
     end
   end
 
+  # @return [Array] the {#result} wrapped in an Array if the Service call succeeds, or an empty Array if the Service
+  #    call fails.
   def to_a
     if success?
       [result]
@@ -171,6 +265,11 @@ class ServiceResult
     end
   end
 
+  ##
+  # Allows ServiceResult to be used with pattern matching.
+  #
+  # @param [Array<:success, :failure, :result, :error>] keys the keys to match on.
+  # @return [Hash{Symbol=>Object}] the match result.
   def deconstruct_keys(keys)
     if keys
       value = {}
@@ -189,6 +288,7 @@ class ServiceResult
     end
   end
 
+  # @return [String] error message associated with the Service call.
   def message
     if @message
       @message
@@ -201,13 +301,18 @@ class ServiceResult
     end
   end
 
+  # @return [Shared::ServiceState] the Service State object.
   def state
     @state ||= ::Shared::ServiceState.build
   end
 
   ##
-  # Required as we create an errors object bound to this ServiceResult.
-  # calling `errors#full_messages` will call `human_attribute_name` here.
+  # @api private
+  # @note
+  #   Required as we create an errors object bound to this ServiceResult.
+  #   Calling `errors#full_messages` will call {.human_attribute_name} here.
+  #
+  # @return (see ApplicationRecord.human_attribute_name)
   def self.human_attribute_name(*)
     ApplicationRecord.human_attribute_name(*)
   end
