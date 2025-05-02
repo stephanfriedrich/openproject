@@ -126,7 +126,7 @@ export class ApiV3WorkPackagesPaths extends ApiV3Collection<WorkPackageResource,
     const params = {
       sortBy: '[["updatedAt","desc"]]',
       offset: '1',
-      pageSize: '10',
+      pageSize: '20',
       ...additionalParams,
     };
 
