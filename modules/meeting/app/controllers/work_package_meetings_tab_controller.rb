@@ -100,10 +100,10 @@ class WorkPackageMeetingsTabController < ApplicationController
   end
 
   def backlog_id
-    meeting_id = add_work_package_to_meeting_params[:meeting_id]
-    return if meeting_id.blank?
+    meeting = Meeting.find(add_work_package_to_meeting_params[:meeting_id])
+    return if meeting.recurring?
 
-    Meeting.find(meeting_id).backlog.id
+    meeting.backlog.id
   end
 
   def set_agenda_items(direction)
