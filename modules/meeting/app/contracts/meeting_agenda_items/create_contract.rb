@@ -34,12 +34,17 @@ module MeetingAgendaItems
 
     validate :user_allowed_to_add, :validate_meeting_existence
 
-    def self.assignable_meetings(user)
+    def self.assignable_meetings(user, wp_id)
       Meeting
         .open
         .not_templated
         .not_cancelled
         .visible(user)
+        .where.not(
+          id: MeetingAgendaItem
+                .where(item_type: "work_package", work_package_id: wp_id)
+                .select(:meeting_id)
+        )
     end
 
     ##
